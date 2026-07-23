@@ -15,6 +15,23 @@ export interface Todo {
   updatedAt: string
 }
 
+export interface ProfileData {
+  id: string
+  name: string
+  email: string
+  bio?: string
+  phoneNumber?: string
+  avatarUrl?: string
+  timezone?: string
+}
+
+export interface AccountSettings {
+  theme?: 'light' | 'dark' | 'system'
+  notifications?: boolean
+  emailAlerts?: boolean
+  language?: string
+}
+
 export interface LoginResponse {
   token: string
   user: User

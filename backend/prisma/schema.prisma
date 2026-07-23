@@ -8,13 +8,18 @@ generator client {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  todos     Todo[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(uuid())
+  email       String   @unique
+  password    String
+  name        String
+  bio         String   @default("")
+  phoneNumber String   @default("")
+  avatarUrl   String   @default("")
+  timezone    String   @default("UTC")
+  preferences String   @default("{\"theme\":\"system\",\"notifications\":true,\"emailAlerts\":true,\"language\":\"en\"}")
+  todos       Todo[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Todo {

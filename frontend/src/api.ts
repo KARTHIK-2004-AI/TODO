@@ -1,4 +1,4 @@
-import type { LoginResponse, RegisterResponse, Todo } from './types'
+import type { AccountSettings, LoginResponse, ProfileData, RegisterResponse, Todo } from './types'
 
 const API_BASE_URL = '/api'
 
@@ -20,11 +20,33 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!response.ok) {
-    const errorPayload = await response.json().catch(() => ({}))
-    throw new Error((errorPayload as { message?: string }).message || 'Request failed')
+    const errorText = await response.text()
+    let errorPayload: unknown = {}
+
+    if (errorText) {
+      try {
+        errorPayload = JSON.parse(errorText)
+      } catch {
+        errorPayload = errorText
+      }
+    }
+
+    if (typeof errorPayload === 'string') {
+      throw new Error(errorPayload)
+    }
+
+    const payloadObj = errorPayload as { error?: string; message?: string }
+    throw new Error(payloadObj.error || payloadObj.message || 'Request failed')
   }
 
-  return response.json() as Promise<T>
+  const text = await response.text()
+  if (!text) return {} as T
+
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    return text as T
+  }
 }
 
 export async function login(email: string, password: string): Promise<LoginResponse> {
@@ -68,5 +90,41 @@ export async function updateTodo(id: string, payload: Partial<Todo>): Promise<To
 export async function deleteTodo(id: string): Promise<{ message: string }> {
   return request<{ message: string }>(`/todos/${id}`, {
     method: 'DELETE',
+  })
+}
+
+export async function getProfile(): Promise<ProfileData> {
+  return request<ProfileData>('/profile')
+}
+
+export async function updateProfile(payload: Partial<ProfileData>): Promise<ProfileData> {
+  return request<ProfileData>('/profile', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ message: string }> {
+  return request<{ message: string }>('/change-password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  })
+}
+
+export async function fetchAccountSettings(): Promise<AccountSettings> {
+  return request<AccountSettings>('/account/settings')
+}
+
+export async function updateAccountSettings(payload: AccountSettings): Promise<AccountSettings> {
+  return request<AccountSettings>('/account/settings', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
+}
+
+export async function deleteAccount(password?: string): Promise<{ message: string }> {
+  return request<{ message: string }>('/account', {
+    method: 'DELETE',
+    ...(password ? { body: JSON.stringify({ password }) } : {}),
   })
 }

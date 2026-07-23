@@ -10,7 +10,22 @@
   - Runtime: Node.js
   - Framework: Express.js (flexible, standard, simple to structure)
   - ORM: Prisma (excellent type safety, schema migrations, and clean API)
-  - Database: SQLite (local file-based, zero setup, easy to run anywhere)
+  - Database: SQLite (local file-based, initial setup)
 - **Consequences**:
   - Requires `npm init`, typescript configuration, and Prisma migration steps.
   - Generates type-safe database queries.
+
+---
+
+## DEC-002: Switching Database Engine to MySQL
+
+- **Status**: Accepted
+- **Date**: 2026-07-23
+- **Context**: Scaling database architecture to production standards with relational database support.
+- **Decision**: 
+  - Update Prisma ORM provider from `sqlite` to `mysql` in `backend/prisma/schema.prisma`.
+  - Update `DATABASE_URL` in `backend/.env` to `mysql://root:password@localhost:3306/todo_db`.
+- **Consequences**:
+  - Enables production-grade relational features, ACID transactions, and MySQL scaling.
+  - Requires MySQL database server instance listening on standard port 3306.
+
