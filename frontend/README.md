@@ -19,4 +19,4 @@ React 19 + TypeScript + Vite single-page application for the Todo Management Sys
    npm run build
    ```
 
-Refer to the main [README.md](file:///d:/TODO/README.md) for full project documentation and backend setup instructions.
+Refer to the main [README.md](../README.md) for full project documentation and backend setup instructions.

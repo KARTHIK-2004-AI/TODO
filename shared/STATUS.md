@@ -3,7 +3,7 @@
 ## Current Milestones
 
 - **Phase 1: Setup & Architecture**: Complete
-- **Phase 2: Database Schema**: Complete (SQLite initialized with User and Todo models)
+- **Phase 2: Database Schema**: Complete (Prisma schema initialized with User, Team, TeamMember, TeamInvite, and Todo models; migrated to MySQL in Sprint 3)
 - **Phase 3: Middlewares & Auth**: Complete (CORS, JWT, validation, error handling)
 - **Phase 4: API Endpoints & Routes**: Complete (auth and todo REST endpoints)
 - **Phase 5: Integration & Testing**: In Progress - Frontend wired to backend via Vite proxy
@@ -11,7 +11,7 @@
 
 ## Status Summary
 
-- **2026-07-19 (Backend)**: Implemented Node.js + Express + TypeScript backend with Prisma ORM and SQLite database. All auth and todo endpoints working.
+- **2026-07-19 (Backend)**: Implemented Node.js + Express + TypeScript backend with Prisma ORM (initially SQLite, migrated to MySQL 8.0 in Sprint 3). All auth and todo endpoints working.
 - **2026-07-19 (Frontend)**: Implemented responsive React + TypeScript UI with auth flows, todo CRUD, filtering, search, loading/error states. UI wired to API.
 - **2026-07-23 (Backend Sprint 2)**: Extended User model with bio, phoneNumber, avatarUrl, timezone, and preferences. Implemented UserService, profileRouter, and accountRouter with Zod validation and bcrypt password hashing. All 6 profile & account REST endpoints fully tested and operational.
 - **2026-07-23 (Frontend Sprint 2)**: Added an account-management experience with profile editing, preferences, password change UI, and account deletion confirmation.
@@ -26,7 +26,7 @@
 - **Backend**: http://localhost:4000 (Express server)
 - **Frontend**: http://localhost:5173 (Vite dev server with API proxy)
 - **ORM**: Prisma ORM
-- **Database**: MySQL (`mysql://root:password@localhost:3306/todo_db`)
+- **Database**: MySQL (`mysql://root:password@localhost:3306/tododb`)
 - **API**: RESTful endpoints following the complete contract in `shared/API.md` for auth, todos, profile, account management, and team collaboration.
 
 ## Sprint 3.1 Frontend Sync

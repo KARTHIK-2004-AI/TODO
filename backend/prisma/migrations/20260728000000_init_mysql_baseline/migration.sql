@@ -6,7 +6,7 @@ CREATE TABLE `User` (
     `name` VARCHAR(191) NOT NULL,
     `bio` VARCHAR(191) NOT NULL DEFAULT '',
     `phoneNumber` VARCHAR(191) NOT NULL DEFAULT '',
-    `avatarUrl` VARCHAR(191) NOT NULL DEFAULT '',
+    `avatarUrl` VARCHAR(2048) NOT NULL DEFAULT '',
     `timezone` VARCHAR(191) NOT NULL DEFAULT 'UTC',
     `preferences` VARCHAR(191) NOT NULL DEFAULT '{"theme":"system","notifications":true,"emailAlerts":true,"language":"en"}',
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),

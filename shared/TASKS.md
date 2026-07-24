@@ -3,9 +3,9 @@
 - [x] Project Setup
   - [x] Initialize repository directories (`backend/`, `shared/`)
   - [x] Initialize Express TypeScript configuration
-  - [x] Configure database configuration (Prisma + SQLite)
+  - [x] Configure database configuration (Prisma + MySQL)
 - [x] Database Schema & Setup
-  - [x] Define database tables (User, Todo)
+  - [x] Define database tables (User, Todo, Team, TeamMember, TeamInvite)
   - [x] Define database client utility
 - [x] Middlewares & Utilities
   - [x] Implement Logging & Request parsing middleware
@@ -19,6 +19,6 @@
   - [x] REST endpoints for `/api/todos` (CRUD operations)
 - [ ] Testing & Verification (Requires User Setup)
   - [ ] Run `npm install` inside `/backend`
-  - [ ] Run `npm run db:migrate` to initialize the SQLite database
+  - [ ] Run `npm run db:migrate` to initialize the MySQL database
   - [ ] Run `npx prisma db seed` to seed the database with sample data
   - [ ] Run `npm run dev` to start the backend server

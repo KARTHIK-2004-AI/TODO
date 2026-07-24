@@ -1,6 +1,8 @@
 # Todo Application — Production-Ready Full Stack Task Management System
 
-A full-stack Todo Application featuring an Express TypeScript backend with Prisma ORM (SQLite) and a React + TypeScript + Vite frontend.
+# Todo Application — Production-Ready Full Stack Task Management System
+
+A full-stack Todo Application featuring an Express TypeScript backend with Prisma ORM (MySQL 8.0) and a React + TypeScript + Vite frontend.
 
 ---
 
@@ -8,7 +10,7 @@ A full-stack Todo Application featuring an Express TypeScript backend with Prism
 
 ```
 ├── backend/            # Express + TypeScript REST API
-│   ├── api/            # API Route Controllers (Auth, Todos, Profile, Account)
+│   ├── api/            # API Route Controllers (Auth, Todos, Profile, Account, Teams)
 │   ├── database/       # Prisma Client configuration
 │   ├── middleware/     # Auth, Validation, Logging, Error Handler
 │   ├── prisma/         # Prisma Schema & SQL Migrations
@@ -25,9 +27,9 @@ A full-stack Todo Application featuring an Express TypeScript backend with Prism
 
 ## Tech Stack
 
-- **Backend**: Node.js, Express, TypeScript, Zod, Prisma ORM, SQLite, JWT Authentication, Winston Logging
+- **Backend**: Node.js, Express, TypeScript, Zod, Prisma ORM, MySQL 8.0, JWT Authentication, Winston Logging
 - **Frontend**: React 19, TypeScript, Vite, Vanilla CSS
-- **Database**: SQLite (via Prisma ORM for local development)
+- **Database**: MySQL 8.0 (Containerized via Docker Compose or local MySQL server)
 
 ---
 
@@ -35,12 +37,21 @@ A full-stack Todo Application featuring an Express TypeScript backend with Prism
 
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
+- **Docker Desktop** (or local MySQL 8.0 server listening on port 3306)
 
 ---
 
 ## Quick Start / Setup Instructions
 
-### 1. Environment Setup
+### 1. Database Setup
+
+Start containerized MySQL 8.0 database service from the root workspace:
+
+```bash
+docker-compose up -d
+```
+
+### 2. Environment Setup
 
 Copy the environment template in `backend`:
 
@@ -53,11 +64,11 @@ Ensure `backend/.env` has valid development configurations:
 ```env
 PORT=4000
 NODE_ENV=development
-DATABASE_URL="file:./prisma/dev.db"
-JWT_SECRET="your-super-secret-jwt-key-here"
+DATABASE_URL="mysql://root:password@localhost:3306/tododb"
+JWT_SECRET="dev-jwt-secret-key-change-in-production"
 ```
 
-### 2. Backend Setup & Run
+### 3. Backend Setup & Run
 
 Navigate to the `backend` directory, install dependencies, run migrations, seed the database, and start the development server:
 
@@ -80,7 +91,7 @@ npx prisma db seed
 npm run dev
 ```
 
-### 3. Frontend Setup & Run
+### 4. Frontend Setup & Run
 
 In a separate terminal, navigate to `frontend`, install dependencies, and start the Vite dev server:
 
@@ -102,7 +113,8 @@ npm run dev
 - `npm run dev`: Start Express backend server in development mode with HMR (`ts-node-dev`)
 - `npm run build`: Compile TypeScript to `dist/`
 - `npm start`: Run compiled production server
-- `npx prisma migrate dev`: Run Prisma database migrations
+- `npm run db:migrate`: Run Prisma database migrations
+- `npm run test:sprint3`: Run Sprint 3 backend integration test suite
 - `npx prisma db seed`: Seed initial data (`test@example.com` / `password123`)
 - `npx prisma studio`: Open Prisma GUI database browser
 
@@ -115,9 +127,9 @@ npm run dev
 
 ## Documentation Links
 
-- [DATABASE.md](file:///d:/TODO/DATABASE.md): Detailed database schema, SQLite details, migration history, and production strategy.
-- [shared/API.md](file:///d:/TODO/shared/API.md): Comprehensive REST API contract documentation for Auth, Todos, Profile, and Account management.
-- [project-management/SPRINT_2_1_REPORT.md](file:///d:/TODO/project-management/SPRINT_2_1_REPORT.md): Sprint 2.1 Engineering Cleanup & Production Readiness Report.
+- [DATABASE.md](./DATABASE.md): Detailed database schema, MySQL details, migration history, and production strategy.
+- [shared/API.md](./shared/API.md): Comprehensive REST API contract documentation for Auth, Todos, Profile, Account management, and Teams.
+- [project-management/SPRINT_2_1_REPORT.md](./project-management/SPRINT_2_1_REPORT.md): Sprint 2.1 Engineering Cleanup & Production Readiness Report.
 
 ---
 
@@ -126,3 +138,4 @@ npm run dev
 For local testing, after running `npx prisma db seed`, you can log in with:
 - **Email**: `test@example.com`
 - **Password**: `password123`
+

@@ -16,7 +16,7 @@ Sprint 2.1 focused exclusively on repository quality, security, maintainability,
 ## Completed Tasks Summary
 
 ### 1. Repository Cleanup (`Task 1`)
-- Created a comprehensive root [.gitignore](file:///d:/TODO/.gitignore) file.
+- Created a comprehensive root [.gitignore](../.gitignore) file.
 - Excluded dependencies (`node_modules/`, `venv/`, `.venv/`), build outputs (`dist/`, `build/`, `.vite/`, `coverage/`), runtime database files (`*.db`, `backend/prisma/dev.db`), environment files (`.env`), system files (`.DS_Store`, `Thumbs.db`), and shell wrappers (`powershell.cmd`).
 - Verified all ignored items are untracked in Git.
 
@@ -28,11 +28,11 @@ Sprint 2.1 focused exclusively on repository quality, security, maintainability,
 ### 3. Environment & Secrets Management (`Task 3`)
 - Removed committed `.env` file containing secret keys and specific path configurations.
 - Verified no hardcoded production secrets exist in source code files.
-- Created [backend/.env.example](file:///d:/TODO/backend/.env.example) and [.env.example](file:///d:/TODO/.env.example) templates with generic placeholders (`PORT`, `NODE_ENV`, `DATABASE_URL`, `JWT_SECRET`).
+- Created [backend/.env.example](../backend/.env.example) and [.env.example](../.env.example) templates with generic placeholders (`PORT`, `NODE_ENV`, `DATABASE_URL`, `JWT_SECRET`).
 - Documented required environment variables across documentation artifacts.
 
 ### 4. Database Standardization (`Task 4`)
-- Created [DATABASE.md](file:///d:/TODO/DATABASE.md) documenting the database architecture (Prisma ORM with SQLite for development).
+- Created [DATABASE.md](../DATABASE.md) documenting the database architecture (Prisma ORM with SQLite for development).
 - Defined models (`User`, `Todo`) and schema properties.
 - Detailed the roadmap for transitioning to production databases (e.g. PostgreSQL or MySQL).
 
@@ -48,9 +48,9 @@ Sprint 2.1 focused exclusively on repository quality, security, maintainability,
 - Cleaned directory hierarchy into modular frontend, backend, project management, and shared specification directories.
 
 ### 7. Documentation Hardening (`Task 7`)
-- Created root [README.md](file:///d:/TODO/README.md) with comprehensive architecture overview, prerequisites, environment setup, and start commands for both frontend and backend.
-- Updated [frontend/README.md](file:///d:/TODO/frontend/README.md) to reference root instructions.
-- Updated [project-management/CURRENT_SPRINT.md](file:///d:/TODO/project-management/CURRENT_SPRINT.md) and [project-management/CHANGELOG.md](file:///d:/TODO/project-management/CHANGELOG.md).
+- Created root [README.md](../README.md) with comprehensive architecture overview, prerequisites, environment setup, and start commands for both frontend and backend.
+- Updated [frontend/README.md](../frontend/README.md) to reference root instructions.
+- Updated [project-management/CURRENT_SPRINT.md](./CURRENT_SPRINT.md) and [project-management/CHANGELOG.md](./CHANGELOG.md).
 
 ### 8. Dependency Audit (`Task 8`)
 - Audited dependencies in both `backend/package.json` and `frontend/package.json`.
