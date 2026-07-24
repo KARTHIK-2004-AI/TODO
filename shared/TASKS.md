@@ -3,7 +3,7 @@
 - [x] Project Setup
   - [x] Initialize repository directories (`backend/`, `shared/`)
   - [x] Initialize Express TypeScript configuration
-  - [x] Configure database configuration (Prisma + SQLite)
+  - [x] Configure database configuration (Prisma + MySQL; bootstrapped on SQLite, migrated to MySQL in Sprint 3)
 - [x] Database Schema & Setup
   - [x] Define database tables (User, Todo)
   - [x] Define database client utility

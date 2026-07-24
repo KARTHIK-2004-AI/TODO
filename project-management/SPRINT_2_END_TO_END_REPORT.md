@@ -19,7 +19,7 @@ All integration issues, database configuration mismatches, and REST contract pro
 | Component | Status | Summary |
 | :--- | :---: | :--- |
 | **Project Structure** | ✅ **PASS** | Frontend (`vite build`) and Backend (`tsc --noEmit`) compile cleanly with zero errors. All dependencies and env vars are configured. |
-| **Database Verification** | ✅ **PASS** | MySQL database (`mysql://root:root@localhost:3306/todo_db`) in sync with Prisma schema. User creation, profile updates, settings persistence, and cascading account deletion verified 100%. |
+| **Database Verification** | ✅ **PASS** | MySQL database (`mysql://root:password@localhost:3306/tododb`) in sync with Prisma schema. User creation, profile updates, settings persistence, and cascading account deletion verified 100%. |
 | **Backend API** | ✅ **PASS** | All 8 Sprint 2 REST endpoints operational with JWT Bearer authentication and Zod schema validation. |
 | **Frontend Integration** | ✅ **PASS** | REST contracts aligned (`phoneNumber`, `theme`, `notifications`, `emailAlerts`). Error states and password confirmation flows fully implemented. |
 | **End-to-End User Flow** | ✅ **PASS** | Complete user scenario (Register -> Login -> View Profile -> Update Profile -> Change Settings -> Change Password -> Create Todo -> Delete Account -> DB Cleanup) passes 100%. |
@@ -32,7 +32,7 @@ All integration issues, database configuration mismatches, and REST contract pro
 - **Frontend**: React + TypeScript setup in `/frontend`. Successfully compiles via `tsc -b` and builds production bundle via `vite build`. Vite dev server includes proxy rule `/api -> http://localhost:4000`.
 - **Backend**: Express + Node.js + TypeScript setup in `/backend`. Passes `tsc --noEmit`. Uses CORS, Winston logger, Zod validator, and JWT middleware.
 - **Dependencies**: All packages (`@prisma/client`, `express`, `zod`, `bcrypt`, `jsonwebtoken`, `react`, `vite`) installed and operational.
-- **Environment**: Backend `.env` configured with valid MySQL connection string (`DATABASE_URL="mysql://root:root@localhost:3306/todo_db"`).
+- **Environment**: Backend `.env` configured with valid MySQL connection string (`DATABASE_URL="mysql://root:password@localhost:3306/tododb"`).
 
 ### 3.2 Database Verification
 - **Prisma Schema**: `backend/prisma/schema.prisma` specifies `provider = "mysql"`.
@@ -78,7 +78,7 @@ All 8 Sprint 2 target endpoints verified:
 
 ## 5. Resolution Summary
 
-All 6 issues documented in [shared/INTEGRATION_ISSUES.md](file:///d:/TODO/shared/INTEGRATION_ISSUES.md) have been resolved:
+All 6 issues documented in [shared/INTEGRATION_ISSUES.md](../shared/INTEGRATION_ISSUES.md) have been resolved:
 - **Issue 1 (Database Credentials)**: Resolved.
 - **Issue 2 (Profile `phoneNumber` Field)**: Resolved.
 - **Issue 3 (Settings Property Keys)**: Resolved.

@@ -24,7 +24,7 @@
 - **Context**: Scaling database architecture to production standards with relational database support.
 - **Decision**: 
   - Update Prisma ORM provider from `sqlite` to `mysql` in `backend/prisma/schema.prisma`.
-  - Update `DATABASE_URL` in `backend/.env` to `mysql://root:password@localhost:3306/todo_db`.
+  - Update `DATABASE_URL` in `backend/.env` to `mysql://root:password@localhost:3306/tododb`.
 - **Consequences**:
   - Enables production-grade relational features, ACID transactions, and MySQL scaling.
   - Requires MySQL database server instance listening on standard port 3306.

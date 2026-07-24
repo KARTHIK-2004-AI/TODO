@@ -1,6 +1,6 @@
 # Todo Application — Production-Ready Full Stack Task Management System
 
-A full-stack Todo Application featuring an Express TypeScript backend with Prisma ORM (SQLite) and a React + TypeScript + Vite frontend.
+A full-stack Todo Application featuring an Express TypeScript backend with Prisma ORM (MySQL) and a React + TypeScript + Vite frontend.
 
 ---
 
@@ -25,9 +25,9 @@ A full-stack Todo Application featuring an Express TypeScript backend with Prism
 
 ## Tech Stack
 
-- **Backend**: Node.js, Express, TypeScript, Zod, Prisma ORM, SQLite, JWT Authentication, Winston Logging
+- **Backend**: Node.js, Express, TypeScript, Zod, Prisma ORM, MySQL, JWT Authentication, Winston Logging
 - **Frontend**: React 19, TypeScript, Vite, Vanilla CSS
-- **Database**: SQLite (via Prisma ORM for local development)
+- **Database**: MySQL 8.0 (via Prisma ORM)
 
 ---
 
@@ -35,6 +35,15 @@ A full-stack Todo Application featuring an Express TypeScript backend with Prism
 
 - **Node.js**: v18.0.0 or higher
 - **npm**: v9.0.0 or higher
+- **MySQL**: v8.0 or higher (or Docker to run the provided `docker-compose.yml`)
+
+### Optional: Start MySQL via Docker
+
+```bash
+docker compose up -d
+```
+
+This starts MySQL 8.0 on `localhost:3306` with database `tododb` and root password `password`, matching the default `DATABASE_URL`.
 
 ---
 
@@ -53,7 +62,7 @@ Ensure `backend/.env` has valid development configurations:
 ```env
 PORT=4000
 NODE_ENV=development
-DATABASE_URL="file:./prisma/dev.db"
+DATABASE_URL="mysql://root:password@localhost:3306/tododb"
 JWT_SECRET="your-super-secret-jwt-key-here"
 ```
 
@@ -70,8 +79,8 @@ npm install
 # Generate Prisma Client
 npx prisma generate
 
-# Apply Database Migrations
-npx prisma migrate dev
+# Apply Database Migrations (against MySQL)
+npx prisma migrate deploy
 
 # Seed Default User & Demo Data
 npx prisma db seed
@@ -102,7 +111,7 @@ npm run dev
 - `npm run dev`: Start Express backend server in development mode with HMR (`ts-node-dev`)
 - `npm run build`: Compile TypeScript to `dist/`
 - `npm start`: Run compiled production server
-- `npx prisma migrate dev`: Run Prisma database migrations
+- `npx prisma migrate deploy`: Apply Prisma database migrations
 - `npx prisma db seed`: Seed initial data (`test@example.com` / `password123`)
 - `npx prisma studio`: Open Prisma GUI database browser
 
@@ -115,9 +124,9 @@ npm run dev
 
 ## Documentation Links
 
-- [DATABASE.md](file:///d:/TODO/DATABASE.md): Detailed database schema, SQLite details, migration history, and production strategy.
-- [shared/API.md](file:///d:/TODO/shared/API.md): Comprehensive REST API contract documentation for Auth, Todos, Profile, and Account management.
-- [project-management/SPRINT_2_1_REPORT.md](file:///d:/TODO/project-management/SPRINT_2_1_REPORT.md): Sprint 2.1 Engineering Cleanup & Production Readiness Report.
+- [DATABASE.md](./DATABASE.md): Detailed database schema, MySQL details, migration history, and production strategy.
+- [shared/API.md](./shared/API.md): Comprehensive REST API contract documentation for Auth, Todos, Profile, and Account management.
+- [project-management/SPRINT_2_1_REPORT.md](./project-management/SPRINT_2_1_REPORT.md): Sprint 2.1 Engineering Cleanup & Production Readiness Report.
 
 ---
 
