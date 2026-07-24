@@ -27,4 +27,12 @@
 - **Frontend**: http://localhost:5173 (Vite dev server with API proxy)
 - **ORM**: Prisma ORM
 - **Database**: MySQL (`mysql://root:password@localhost:3306/todo_db`)
-- **API**: RESTful endpoints following the complete contract in `shared/API.md` for auth, todos, profile, and account management.
+- **API**: RESTful endpoints following the complete contract in `shared/API.md` for auth, todos, profile, account management, and team collaboration.
+
+## Sprint 3.1 Frontend Sync
+
+- **Status**: Completed
+- **Scope**: Frontend now consumes the Sprint 3 backend contract for todos, profile, account, team creation, team membership, invites, and invite acceptance.
+- **Types Updated**: Team, TeamMember, TeamInvite, InviteStatus, TeamRole, and AcceptInviteResponse now match backend response shapes.
+- **APIs Added**: Team management endpoints are now implemented in the frontend client, including create, list, details, rename, delete, invite, revoke, accept, change role, and remove member.
+- **Compatibility**: Frontend request payloads and response handling now align with the backend implementation without changing backend routes or contracts.

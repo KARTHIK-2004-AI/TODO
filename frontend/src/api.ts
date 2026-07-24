@@ -1,4 +1,15 @@
-import type { AccountSettings, LoginResponse, ProfileData, RegisterResponse, Todo } from './types'
+import type {
+  AcceptInviteResponse,
+  AccountSettings,
+  LoginResponse,
+  ProfileData,
+  RegisterResponse,
+  Team,
+  TeamInvite,
+  TeamMember,
+  TeamRole,
+  Todo,
+} from './types'
 
 const API_BASE_URL = '/api'
 
@@ -20,6 +31,12 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   })
 
   if (!response.ok) {
+    if (response.status === 401) {
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('authUser')
+      window.dispatchEvent(new Event('auth:unauthorized'))
+    }
+
     const errorText = await response.text()
     let errorPayload: unknown = {}
 
@@ -63,20 +80,28 @@ export async function register(email: string, password: string, name: string): P
   })
 }
 
-export async function fetchTodos(completed?: boolean, search?: string): Promise<Todo[]> {
+export async function fetchTodos(completed?: boolean, search?: string, teamId?: string): Promise<Todo[]> {
   const params = new URLSearchParams()
 
   if (completed !== undefined) params.set('completed', String(completed))
   if (search) params.set('search', search)
+  if (teamId) params.set('teamId', teamId)
 
   const query = params.toString()
   return request<Todo[]>(`/todos${query ? `?${query}` : ''}`)
 }
 
-export async function createTodo(title: string, description: string): Promise<Todo> {
+export async function getTodoById(id: string): Promise<Todo> {
+  return request<Todo>(`/todos/${id}`)
+}
+
+export async function createTodo(title: string, description: string, teamId?: string): Promise<Todo> {
+  const payload: { title: string; description: string; teamId?: string } = { title, description }
+  if (teamId) payload.teamId = teamId
+
   return request<Todo>('/todos', {
     method: 'POST',
-    body: JSON.stringify({ title, description }),
+    body: JSON.stringify(payload),
   })
 }
 
@@ -126,5 +151,65 @@ export async function deleteAccount(password?: string): Promise<{ message: strin
   return request<{ message: string }>('/account', {
     method: 'DELETE',
     ...(password ? { body: JSON.stringify({ password }) } : {}),
+  })
+}
+
+export async function createTeam(name: string): Promise<Team> {
+  return request<Team>('/teams', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function fetchMyTeams(): Promise<Team[]> {
+  return request<Team[]>('/teams')
+}
+
+export async function fetchTeamDetails(teamId: string): Promise<Team> {
+  return request<Team>(`/teams/${teamId}`)
+}
+
+export async function renameTeam(teamId: string, name: string): Promise<Team> {
+  return request<Team>(`/teams/${teamId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name }),
+  })
+}
+
+export async function deleteTeam(teamId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/teams/${teamId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function inviteTeamMember(teamId: string, email: string): Promise<TeamInvite> {
+  return request<TeamInvite>(`/teams/${teamId}/invites`, {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function revokeTeamInvite(teamId: string, inviteId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/teams/${teamId}/invites/${inviteId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function acceptTeamInvite(token: string): Promise<AcceptInviteResponse> {
+  return request<AcceptInviteResponse>(`/invites/${token}/accept`, {
+    method: 'POST',
+  })
+}
+
+export async function updateTeamMemberRole(teamId: string, userId: string, role: TeamRole): Promise<TeamMember> {
+  return request<TeamMember>(`/teams/${teamId}/members/${userId}/role`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  })
+}
+
+export async function removeTeamMember(teamId: string, userId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/teams/${teamId}/members/${userId}`, {
+    method: 'DELETE',
   })
 }

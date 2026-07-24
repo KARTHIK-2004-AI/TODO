@@ -10,6 +10,8 @@ import authRouter from './api/authRouter';
 import todoRouter from './api/todoRouter';
 import profileRouter from './api/profileRouter';
 import accountRouter from './api/accountRouter';
+import teamRouter from './api/teamRouter';
+import inviteRouter from './api/inviteRouter';
 import { authenticate } from './middleware/auth';
 import { validate } from './middleware/validation';
 import { UserService } from './services/userService';
@@ -35,6 +37,10 @@ app.use('/api/profile', profileRouter);
 app.use('/profile', profileRouter);
 app.use('/api/account', accountRouter);
 app.use('/account', accountRouter);
+app.use('/api/teams', teamRouter);
+app.use('/teams', teamRouter);
+app.use('/api/invites', inviteRouter);
+app.use('/invites', inviteRouter);
 
 // Support direct PUT /change-password and PUT /api/change-password
 const changePasswordSchema = z.object({
@@ -67,3 +73,5 @@ app.use(errorHandler);
 app.listen(port, () => {
   logger.info(`Server is running on port ${port} in ${process.env.NODE_ENV || 'development'} mode`);
 });
+
+export default app;

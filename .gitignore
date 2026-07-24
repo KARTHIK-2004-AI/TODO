@@ -1,0 +1,56 @@
+# Dependencies & Packages
+node_modules/
+**/node_modules/
+venv/
+.venv/
+ENV/
+env/
+__pycache__/
+*.pyc
+
+# Build & Output
+dist/
+**/dist/
+build/
+coverage/
+.vite/
+.cache/
+*.tsbuildinfo
+
+# Database & SQLite files
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+backend/prisma/dev.db
+
+# Environment & Secrets
+.env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+!.env.example
+**/!.env.example
+
+# OS & System files
+.DS_Store
+Thumbs.db
+ehthumbs.db
+desktop.ini
+*.tmp
+*.temp
+*.log
+powershell.cmd
+**/powershell.cmd
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Temporary & AI Agent workspace files
+.gemini/
+.agents/

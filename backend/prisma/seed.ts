@@ -36,7 +36,7 @@ async function main() {
     },
     {
       title: 'Verify database setup',
-      description: 'Prisma, SQLite, and the database schema are working properly!',
+      description: 'Prisma, MySQL, and the database schema are working properly!',
       completed: true,
     },
     {

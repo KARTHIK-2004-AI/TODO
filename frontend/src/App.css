@@ -43,7 +43,8 @@
 }
 
 .auth-form,
-.todo-form {
+.todo-form,
+.team-form {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -103,7 +104,8 @@ button:disabled {
 
 button[type='submit'],
 .filters button.active,
-.view-switcher .active {
+.view-switcher .active,
+.workspace-switcher .active {
   background: linear-gradient(120deg, #4f46e5, #7c3aed);
   color: white;
   box-shadow: 0 12px 24px rgba(99, 102, 241, 0.25);
@@ -112,14 +114,15 @@ button[type='submit'],
 .secondary,
 .delete,
 .filters button,
-.view-switcher button {
+.view-switcher button,
+.workspace-switcher button {
   background: #eef2ff;
   color: #4338ca;
 }
 
 .content-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 24px;
 }
 
@@ -140,7 +143,8 @@ button[type='submit'],
 }
 
 .filters,
-.view-switcher {
+.view-switcher,
+.workspace-switcher {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
@@ -272,6 +276,17 @@ button[type='submit'],
   color: #64748b;
 }
 
+.todo-badge {
+  display: inline-flex;
+  margin-top: 8px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #ede9fe;
+  color: #6d28d9;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
 .empty-state {
   padding: 16px;
   text-align: center;
@@ -285,6 +300,58 @@ button[type='submit'],
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.workspace-copy,
+.invite-copy {
+  color: #64748b;
+  margin-bottom: 12px;
+}
+
+.team-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.team-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.team-card {
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  padding: 16px;
+  background: #f8fafc;
+}
+
+.member-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.member-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.member-list li:last-child {
+  border-bottom: none;
+}
+
+.member-list p {
+  margin: 4px 0 0;
+  color: #64748b;
 }
 
 @media (max-width: 900px) {
@@ -309,8 +376,71 @@ button[type='submit'],
     align-items: flex-start;
   }
 
-  .todo-item {
+  .todo-item,
+  .member-list li {
     flex-direction: column;
     align-items: flex-start;
   }
 }
+
+/* Dark Theme Support */
+[data-theme='dark'] .app-shell {
+  background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+  color: #f8fafc;
+}
+
+[data-theme='dark'] .hero-card,
+[data-theme='dark'] .panel {
+  background: rgba(30, 41, 59, 0.95);
+  border-color: #334155;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4);
+  color: #f8fafc;
+}
+
+[data-theme='dark'] .hero-copy,
+[data-theme='dark'] .workspace-copy,
+[data-theme='dark'] .invite-copy,
+[data-theme='dark'] .field-group label,
+[data-theme='dark'] .profile-card p,
+[data-theme='dark'] .todo-main p,
+[data-theme='dark'] .member-list p {
+  color: #94a3b8;
+}
+
+[data-theme='dark'] .field-group input,
+[data-theme='dark'] .field-group textarea,
+[data-theme='dark'] .field-group select,
+[data-theme='dark'] .search-box input {
+  background: #0f172a;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme='dark'] .secondary,
+[data-theme='dark'] .filters button,
+[data-theme='dark'] .view-switcher button,
+[data-theme='dark'] .workspace-switcher button {
+  background: #334155;
+  color: #e0e7ff;
+}
+
+[data-theme='dark'] .delete {
+  background: #451a03;
+  color: #fca5a5;
+}
+
+[data-theme='dark'] .profile-card,
+[data-theme='dark'] .team-card,
+[data-theme='dark'] .todo-item,
+[data-theme='dark'] .empty-state {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme='dark'] .modal-card {
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1px solid #334155;
+}
+

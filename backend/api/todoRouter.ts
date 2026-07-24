@@ -12,6 +12,7 @@ todoRouter.use(authenticate);
 const createTodoSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
+  teamId: z.string().optional(),
 });
 
 const updateTodoSchema = z.object({
@@ -23,7 +24,7 @@ const updateTodoSchema = z.object({
 todoRouter.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    
+
     // Parse filter query parameters
     let completed: boolean | undefined = undefined;
     if (req.query.completed === 'true') {
@@ -31,10 +32,11 @@ todoRouter.get('/', async (req: Request, res: Response, next: NextFunction): Pro
     } else if (req.query.completed === 'false') {
       completed = false;
     }
-    
-    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
 
-    const todos = await TodoService.getTodos(userId, { completed, search });
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+    const teamId = typeof req.query.teamId === 'string' ? req.query.teamId : undefined;
+
+    const todos = await TodoService.getTodos(userId, { completed, search, teamId });
     res.status(200).json(todos);
   } catch (error) {
     next(error);
@@ -47,8 +49,8 @@ todoRouter.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user!.id;
-      const { title, description } = req.body;
-      const newTodo = await TodoService.createTodo(userId, { title, description });
+      const { title, description, teamId } = req.body;
+      const newTodo = await TodoService.createTodo(userId, { title, description, teamId });
       res.status(201).json(newTodo);
     } catch (error) {
       next(error);

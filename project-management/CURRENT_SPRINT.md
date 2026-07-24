@@ -1,53 +1,38 @@
-# Sprint 2: User Profile & Account Management
+# Sprint 2.1: Engineering Cleanup & Repository Hardening
 
 **Status**: Complete  
-**Owner**: Backend Engineer & Database Architect  
-**Sprint Goal**: Extend user management system with profile information, account settings, password changes, account deletion, database migrations, and complete API contracts.
+**Owner**: Senior DevOps / Platform Engineer  
+**Sprint Type**: Engineering Maintenance Sprint (No new features, no UI changes, no backend feature additions)  
+**Sprint Goal**: Bring repository to production-quality standards by cleaning generated files, removing committed secrets, standardizing database documentation, and establishing reproducible startup.
 
 ---
 
 ## 📋 Completed Tasks
 
-### 1. Database Architecture & Schema Extensions
-- [x] Extended `User` model in `backend/prisma/schema.prisma` with:
-  - `bio` (string, default `""`)
-  - `phoneNumber` (string, default `""`)
-  - `avatarUrl` (string, default `""`)
-  - `timezone` (string, default `"UTC"`)
-  - `preferences` (JSON string, default `{"theme":"system","notifications":true,"emailAlerts":true,"language":"en"}`)
-- [x] Applied database migration (`add_user_profile_and_settings`) and generated updated Prisma client (`v5.22.0`).
-- [x] Documented migration SQL in `backend/prisma/migrations/20260723000000_add_user_profile_and_settings/migration.sql`.
+### Task 1 — Repository Cleanup
+- [x] Created root `.gitignore` excluding `node_modules`, `venv`, `.venv`, `dist`, `build`, `coverage`, `.vite`, `.cache`, `*.log`, `*.db`, `*.sqlite`, `*.sqlite3`, `.env`, `.DS_Store`, `Thumbs.db`, `*.tmp`, and `powershell.cmd`.
+- [x] Verified ignored files are no longer tracked.
 
-### 2. Service & Business Logic (`backend/services/userService.ts`)
-- [x] `getProfile(userId)`: Fetch profile fields for authenticated user.
-- [x] `updateProfile(userId, data)`: Update name, bio, phone number, avatar URL, and timezone.
-- [x] `changePassword(userId, currentPassword, newPassword)`: Validate current password with `bcrypt.compare`, hash new password with `bcrypt.hash` (10 salt rounds), and update database.
-- [x] `getSettings(userId)`: Retrieve and parse preferences JSON.
-- [x] `updateSettings(userId, preferencesData)`: Update preferences object.
-- [x] `deleteAccount(userId, password?)`: Validate optional password, then delete user record (cascades deletion of user tasks).
+### Task 2 — Remove Generated Files
+- [x] Removed `.vite`, `venv`, duplicate SQLite database directory `backend/prisma/prisma`, and temporary scripts.
 
-### 3. API Routes & Middleware Validation
-- [x] `GET /api/profile`: Retrieve user profile (`profileRouter.ts`)
-- [x] `PUT /api/profile`: Update user profile with Zod schema validation (`profileRouter.ts`)
-- [x] `PUT /api/change-password`: Secure password update (`profileRouter.ts` / `index.ts`)
-- [x] `GET /api/account/settings`: Retrieve user preferences (`accountRouter.ts`)
-- [x] `PUT /api/account/settings`: Update user preferences (`accountRouter.ts`)
-- [x] `DELETE /api/account`: Remove user account securely (`accountRouter.ts`)
+### Task 3 — Environment & Secrets
+- [x] Removed committed `.env` files from version control.
+- [x] Audited codebase for hardcoded secrets.
+- [x] Created `backend/.env.example` and root `.env.example` with documented generic placeholders.
 
-### 4. Security & Compliance
-- [x] JWT Bearer token authentication enforced on all endpoints via `authenticate` middleware.
-- [x] Input validation enforced on all payload fields via Zod schemas in `validate` middleware.
-- [x] Password security enforced using Bcrypt salt hashing.
-- [x] Strict user isolation: operations restricted strictly to `req.user.id`.
+### Task 4 & 5 — Database Standardization & Migration Cleanup
+- [x] Documented Prisma ORM + SQLite database strategy in `DATABASE.md`.
+- [x] Documented Prisma migration history and seeding commands.
 
-### 5. API Documentation & Project Tracking
-- [x] Updated `shared/API.md` with complete endpoints, headers, payloads, success responses, and error codes.
-- [x] Updated `shared/STATUS.md` and `shared/BLOCKERS.md`.
-- [x] Created `project-management/CURRENT_SPRINT.md` and `project-management/CHANGELOG.md`.
-- [x] Updated `BACKEND_WORK_DONE.md`.
+### Task 6 & 7 — Repository Structure & Documentation
+- [x] Removed obsolete scratch/test scripts (`run-migrate.js`, `run-prisma-cli.js`, `test-sprint2.ts`, `test_sprint2.py`, `powershell.cmd` in backend).
+- [x] Created root `README.md` with full project setup, architecture overview, and command references.
+- [x] Aligned `frontend/README.md` and `shared/API.md`.
 
----
+### Task 8 & 9 — Dependency Audit & Startup Verification
+- [x] Audited dependencies in `backend/package.json` and `frontend/package.json`.
+- [x] Verified full setup and build pipeline reproducibility for both frontend and backend.
 
-## 🧪 Verification Summary
-- Executed `backend/test-sprint2.ts` direct Node.js backend validation.
-- All endpoints, authentication checks, validation rules, password hashing, and cascading database deletions verified working cleanly.
+### Task 10 — Production Readiness Deliverables
+- [x] Created `project-management/SPRINT_2_1_REPORT.md` summarizing completed cleanup tasks, findings, and readiness evaluation.
