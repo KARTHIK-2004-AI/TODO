@@ -7,13 +7,13 @@ As of **Sprint 3**, this project runs exclusively on **MySQL**. SQLite has been 
 - **ORM**: Prisma (`@prisma/client` v5.12.1)
 - **Database Engine**: MySQL 8.0 (Containerized via Docker Compose or local instance)
 - **Database Connection URL**: `mysql://root:password@localhost:3306/tododb`
-- **Schema File**: [schema.prisma](file:///d:/TODO/backend/prisma/schema.prisma)
+- **Schema File**: [schema.prisma](./backend/prisma/schema.prisma)
 
 ---
 
 ## Migration History Reset Strategy
 
-Prisma migration history is provider-specific. Because SQLite DDL syntax (e.g. `PRAGMA foreign_keys`, SQLite types) cannot be replayed against MySQL, the previous SQLite migration history was archived (located at [backend/prisma/migrations_sqlite_archive](file:///d:/TODO/backend/prisma/migrations_sqlite_archive)).
+Prisma migration history is provider-specific. Because SQLite DDL syntax (e.g. `PRAGMA foreign_keys`, SQLite types) cannot be replayed against MySQL, the previous SQLite migration history was archived (located at [backend/prisma/migrations_sqlite_archive](./backend/prisma/migrations_sqlite_archive)).
 
 A fresh, provider-native MySQL baseline migration was generated:
 - **`20260728000000_init_mysql_baseline`**: Initial MySQL schema defining `User`, `Team`, `TeamMember`, `TeamInvite`, and `Todo` tables along with native MySQL `ENUM` types and foreign key constraints.
