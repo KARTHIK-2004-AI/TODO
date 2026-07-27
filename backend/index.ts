@@ -12,6 +12,8 @@ import profileRouter from './api/profileRouter';
 import accountRouter from './api/accountRouter';
 import teamRouter from './api/teamRouter';
 import inviteRouter from './api/inviteRouter';
+import notificationRouter from './api/notificationRouter';
+import activityRouter from './api/activityRouter';
 import { authenticate } from './middleware/auth';
 import { validate } from './middleware/validation';
 import { UserService } from './services/userService';
@@ -41,6 +43,8 @@ app.use('/api/teams', teamRouter);
 app.use('/teams', teamRouter);
 app.use('/api/invites', inviteRouter);
 app.use('/invites', inviteRouter);
+app.use('/api/notifications', notificationRouter);
+app.use('/api/activity', activityRouter);
 
 // Support direct PUT /change-password and PUT /api/change-password
 const changePasswordSchema = z.object({

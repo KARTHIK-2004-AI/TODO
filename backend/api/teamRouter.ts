@@ -1,7 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { Role } from '@prisma/client';
-import { TeamService } from '../services/teamService';
+import { Role } from '../prisma/client';
+import { CollaborationService } from '../services/collaborationService';
 import { validate } from '../middleware/validation';
 import { authenticate } from '../middleware/auth';
 
@@ -12,6 +12,8 @@ teamRouter.use(authenticate);
 
 const createTeamSchema = z.object({
   name: z.string().min(1, 'Team name is required').max(100, 'Team name too long'),
+  description: z.string().max(500, 'Description too long').optional(),
+  purpose: z.string().max(500, 'Purpose too long').optional(),
 });
 
 const updateTeamSchema = z.object({
@@ -35,8 +37,8 @@ teamRouter.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user!.id;
-      const { name } = req.body;
-      const team = await TeamService.createTeam(userId, name);
+      const { name, description, purpose } = req.body;
+      const team = await CollaborationService.createTeam(userId, name, description, purpose);
       res.status(201).json(team);
     } catch (error) {
       next(error);
@@ -48,7 +50,7 @@ teamRouter.post(
 teamRouter.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const teams = await TeamService.listMyTeams(userId);
+    const teams = await CollaborationService.listMyTeams(userId);
     res.status(200).json(teams);
   } catch (error) {
     next(error);
@@ -60,7 +62,7 @@ teamRouter.get('/:teamId', async (req: Request, res: Response, next: NextFunctio
   try {
     const userId = req.user!.id;
     const { teamId } = req.params;
-    const team = await TeamService.getTeam(userId, teamId);
+    const team = await CollaborationService.getTeam(userId, teamId);
     res.status(200).json(team);
   } catch (error) {
     next(error);
@@ -76,7 +78,7 @@ teamRouter.put(
       const userId = req.user!.id;
       const { teamId } = req.params;
       const { name } = req.body;
-      const updatedTeam = await TeamService.renameTeam(userId, teamId, name);
+      const updatedTeam = await CollaborationService.renameTeam(userId, teamId, name);
       res.status(200).json(updatedTeam);
     } catch (error) {
       next(error);
@@ -89,7 +91,7 @@ teamRouter.delete('/:teamId', async (req: Request, res: Response, next: NextFunc
   try {
     const userId = req.user!.id;
     const { teamId } = req.params;
-    const result = await TeamService.deleteTeam(userId, teamId);
+    const result = await CollaborationService.deleteTeam(userId, teamId);
     res.status(200).json(result);
   } catch (error) {
     next(error);
@@ -105,7 +107,7 @@ teamRouter.post(
       const userId = req.user!.id;
       const { teamId } = req.params;
       const { email } = req.body;
-      const invite = await TeamService.inviteMember(userId, teamId, email);
+      const invite = await CollaborationService.inviteMember(userId, teamId, email);
       res.status(201).json(invite);
     } catch (error) {
       next(error);
@@ -120,7 +122,7 @@ teamRouter.delete(
     try {
       const userId = req.user!.id;
       const { teamId, id: inviteId } = req.params;
-      const result = await TeamService.revokeInvite(userId, teamId, inviteId);
+      const result = await CollaborationService.revokeInvitation(userId, teamId, inviteId);
       res.status(200).json(result);
     } catch (error) {
       next(error);
@@ -137,7 +139,7 @@ teamRouter.put(
       const actingUserId = req.user!.id;
       const { teamId, userId: targetUserId } = req.params;
       const { role } = req.body;
-      const updatedMember = await TeamService.updateTeamRole(
+      const updatedMember = await CollaborationService.updateTeamRole(
         actingUserId,
         teamId,
         targetUserId,
@@ -157,8 +159,27 @@ teamRouter.delete(
     try {
       const actingUserId = req.user!.id;
       const { teamId, userId: targetUserId } = req.params;
-      const result = await TeamService.removeMember(actingUserId, teamId, targetUserId);
+      const result = await CollaborationService.removeMember(actingUserId, teamId, targetUserId);
       res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /api/teams/:teamId/activity - Fetch team activity timeline
+teamRouter.get(
+  '/:teamId/activity',
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const { teamId } = req.params;
+      const page = req.query.page ? parseInt(req.query.page as string, 10) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : undefined;
+      const type = req.query.type as any;
+
+      const timeline = await CollaborationService.getTeamTimeline(userId, teamId, { page, limit, type });
+      res.status(200).json(timeline);
     } catch (error) {
       next(error);
     }

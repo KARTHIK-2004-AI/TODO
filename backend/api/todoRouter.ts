@@ -1,6 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { TodoService } from '../services/todoService';
+import { CollaborationService } from '../services/collaborationService';
 import { validate } from '../middleware/validation';
 import { authenticate } from '../middleware/auth';
 
@@ -13,12 +13,14 @@ const createTodoSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
   teamId: z.string().optional(),
+  assignedUserId: z.string().nullable().optional(),
 });
 
 const updateTodoSchema = z.object({
   title: z.string().min(1, 'Title cannot be empty').optional(),
   description: z.string().optional(),
   completed: z.boolean().optional(),
+  assignedUserId: z.string().nullable().optional(),
 });
 
 todoRouter.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -36,7 +38,7 @@ todoRouter.get('/', async (req: Request, res: Response, next: NextFunction): Pro
     const search = typeof req.query.search === 'string' ? req.query.search : undefined;
     const teamId = typeof req.query.teamId === 'string' ? req.query.teamId : undefined;
 
-    const todos = await TodoService.getTodos(userId, { completed, search, teamId });
+    const todos = await CollaborationService.getTodos(userId, { completed, search, teamId });
     res.status(200).json(todos);
   } catch (error) {
     next(error);
@@ -49,8 +51,8 @@ todoRouter.post(
   async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user!.id;
-      const { title, description, teamId } = req.body;
-      const newTodo = await TodoService.createTodo(userId, { title, description, teamId });
+      const { title, description, teamId, assignedUserId } = req.body;
+      const newTodo = await CollaborationService.createTodo(userId, { title, description, teamId, assignedUserId });
       res.status(201).json(newTodo);
     } catch (error) {
       next(error);
@@ -62,7 +64,7 @@ todoRouter.get('/:id', async (req: Request, res: Response, next: NextFunction): 
   try {
     const userId = req.user!.id;
     const todoId = req.params.id;
-    const todo = await TodoService.getTodoById(userId, todoId);
+    const todo = await CollaborationService.getTodoById(userId, todoId);
     res.status(200).json(todo);
   } catch (error) {
     next(error);
@@ -76,7 +78,7 @@ todoRouter.put(
     try {
       const userId = req.user!.id;
       const todoId = req.params.id;
-      const updatedTodo = await TodoService.updateTodo(userId, todoId, req.body);
+      const updatedTodo = await CollaborationService.updateTodo(userId, todoId, req.body);
       res.status(200).json(updatedTodo);
     } catch (error) {
       next(error);
@@ -88,7 +90,7 @@ todoRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction
   try {
     const userId = req.user!.id;
     const todoId = req.params.id;
-    const result = await TodoService.deleteTodo(userId, todoId);
+    const result = await CollaborationService.deleteTodo(userId, todoId);
     res.status(200).json(result);
   } catch (error) {
     next(error);

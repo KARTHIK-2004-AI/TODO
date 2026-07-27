@@ -100,6 +100,37 @@ Represents a task. A todo with `teamId = null` is private to its creator. A todo
 
 ---
 
+### `Notification`
+Represents an event notification delivered to a specific user.
+
+| Field | Type | Attributes | Description |
+|-------|------|------------|-------------|
+| `id` | String | `@id @default(uuid())` | Unique notification UUID |
+| `userId` | String | FK -> `User.id` | Target recipient user ID |
+| `title` | String | | Brief notification title |
+| `message` | String | | Text details of notification |
+| `type` | String | | Event classification type |
+| `isRead` | Boolean | `@default(false)` | Read/unread status flag |
+| `createdAt` | DateTime | `@default(now())` | Creation timestamp |
+
+---
+
+### `ActivityLog`
+Represents an action performed by a user in either a personal or team scope. Used to generate the activity timelines.
+
+| Field | Type | Attributes | Description |
+|-------|------|------------|-------------|
+| `id` | String | `@id @default(uuid())` | Unique activity log UUID |
+| `teamId` | String? | FK -> `Team.id`, Nullable | Team ID if action belongs to a team, `null` if personal |
+| `userId` | String | FK -> `User.id` | User who performed the action |
+| `action` | String | | Event type string (e.g. `TODO_CREATE`) |
+| `entityType` | String | | Affected model class name (e.g. `Todo`) |
+| `entityId` | String | | UUID of affected entity |
+| `metadata` | Json | | Extra action context (e.g. old/new names, titles) |
+| `createdAt` | DateTime | `@default(now())` | Timestamp action occurred |
+
+---
+
 ## Team Deletion Behavior (Non-Destructive Detach)
 
 When a team is deleted via `DELETE /api/teams/:teamId`:

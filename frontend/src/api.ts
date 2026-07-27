@@ -9,6 +9,8 @@ import type {
   TeamMember,
   TeamRole,
   Todo,
+  Notification,
+  ActivityResponse,
 } from './types'
 
 const API_BASE_URL = '/api'
@@ -95,9 +97,10 @@ export async function getTodoById(id: string): Promise<Todo> {
   return request<Todo>(`/todos/${id}`)
 }
 
-export async function createTodo(title: string, description: string, teamId?: string): Promise<Todo> {
-  const payload: { title: string; description: string; teamId?: string } = { title, description }
+export async function createTodo(title: string, description: string, teamId?: string, assignedUserId?: string | null): Promise<Todo> {
+  const payload: { title: string; description: string; teamId?: string; assignedUserId?: string | null } = { title, description }
   if (teamId) payload.teamId = teamId
+  if (assignedUserId) payload.assignedUserId = assignedUserId
 
   return request<Todo>('/todos', {
     method: 'POST',
@@ -154,10 +157,10 @@ export async function deleteAccount(password?: string): Promise<{ message: strin
   })
 }
 
-export async function createTeam(name: string): Promise<Team> {
+export async function createTeam(name: string, description?: string, purpose?: string): Promise<Team> {
   return request<Team>('/teams', {
     method: 'POST',
-    body: JSON.stringify({ name }),
+    body: JSON.stringify({ name, description, purpose }),
   })
 }
 
@@ -201,6 +204,44 @@ export async function acceptTeamInvite(token: string): Promise<AcceptInviteRespo
   })
 }
 
+export async function rejectTeamInvite(token: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/invites/${token}/reject`, {
+    method: 'POST',
+  })
+}
+
+export interface InviteDetails {
+  id: string
+  teamId: string
+  teamName: string
+  ownerName: string
+  description: string
+  purpose: string
+  invitedBy: string
+  members: Array<{
+    id: string
+    userId: string
+    name: string
+    role: TeamRole
+    avatarUrl: string
+  }>
+  tasksCount: number
+  recentActivity: Array<{
+    id: string
+    action: string
+    userName: string
+    createdAt: string
+    metadata: any
+  }>
+  invitationDate: string
+  expiresAt: string
+  status: string
+}
+
+export async function fetchInviteDetails(token: string): Promise<InviteDetails> {
+  return request<InviteDetails>(`/invites/${token}`)
+}
+
 export async function updateTeamMemberRole(teamId: string, userId: string, role: TeamRole): Promise<TeamMember> {
   return request<TeamMember>(`/teams/${teamId}/members/${userId}/role`, {
     method: 'PUT',
@@ -212,4 +253,46 @@ export async function removeTeamMember(teamId: string, userId: string): Promise<
   return request<{ message: string }>(`/teams/${teamId}/members/${userId}`, {
     method: 'DELETE',
   })
+}
+
+export async function fetchNotifications(): Promise<Notification[]> {
+  return request<Notification[]>('/notifications')
+}
+
+export async function fetchUnreadCount(): Promise<{ count: number }> {
+  return request<{ count: number }>('/notifications/unread-count')
+}
+
+export async function markNotificationRead(id: string): Promise<Notification> {
+  return request<Notification>(`/notifications/${id}/read`, {
+    method: 'PUT',
+  })
+}
+
+export async function markAllNotificationsRead(): Promise<{ message: string }> {
+  return request<{ message: string }>('/notifications/read-all', {
+    method: 'PUT',
+  })
+}
+
+export async function deleteNotification(id: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/notifications/${id}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function fetchActivity(page = 1, limit = 10, type?: string): Promise<ActivityResponse> {
+  const params = new URLSearchParams()
+  params.set('page', String(page))
+  params.set('limit', String(limit))
+  if (type) params.set('type', type)
+  return request<ActivityResponse>(`/activity?${params.toString()}`)
+}
+
+export async function fetchTeamActivity(teamId: string, page = 1, limit = 10, type?: string): Promise<ActivityResponse> {
+  const params = new URLSearchParams()
+  params.set('page', String(page))
+  params.set('limit', String(limit))
+  if (type) params.set('type', type)
+  return request<ActivityResponse>(`/teams/${teamId}/activity?${params.toString()}`)
 }

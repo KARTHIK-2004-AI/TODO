@@ -2,6 +2,34 @@
 
 All notable changes to the TODO Application Backend will be documented in this file.
 
+## [1.2.0] - 2026-07-26
+
+### Added
+- **Event-Driven Architecture**: Integrated Node's native `EventEmitter` to decouple core user/team actions from secondary actions like activity logging and notification delivery.
+- **Notification Module**:
+  - Implemented `NotificationService` and `notificationRouter` supporting fetch, unread count, individual/bulk read, and delete operations.
+  - Added frontend `NotificationCenter` component with a responsive bell icon, unread count badge, pulse animations, and dropdown options.
+- **Activity Log & Timeline Module**:
+  - Implemented `ActivityService`, `activityRouter`, and `GET /api/teams/:teamId/activity` routes for logging events and querying timeline feeds.
+  - Added frontend `ActivityTimeline` page with workspace scoping, action category filtering, and pagination support.
+- **Database Schema**:
+  - Added `Notification` and `ActivityLog` tables to Prisma schema, referencing the `User` and `Team` models with cascading delete rules.
+
+### Changed / Updated
+- **Service Event Hooks**: Modified `TodoService` and `TeamService` to trigger events on creation, modification, deletion, role assignment, and invitations.
+- **Layout Integration**: Wired the notification bell and activity feed tab into the dashboard header.
+- **Documentation**: Updated `shared/API.md`, `shared/STATUS.md`, `shared/BLOCKERS.md`, and `DATABASE.md`.
+- **QA & Reliability Fixes**:
+  - Normalized backend timeline queries to support case-insensitive and plural formats (`todos`, `teams`, `invites`, `roles`, `accounts`).
+  - Added missing `WorkspaceSelection` and `InviteRoute` types to resolve Vite compilation errors.
+  - Fixed a runtime Temporal Dead Zone (TDZ) error in `App.tsx` by reordering hook declarations.
+  - Resolved all ESLint custom rule errors (`set-state-in-effect` and `any` declarations) in the frontend codebase.
+  - Marked the Prisma baseline migration as resolved in the MySQL database.
+  - Updated the JWT authentication middleware to verify user existence in the database, rejecting stale tokens from deleted accounts and avoiding DB foreign key constraint violations at runtime.
+  - Fixed a runtime `ReferenceError: currentRole is not defined` inside `useTeams.ts` by computing `selectedTeam` and `currentRole` context variables locally via `useMemo`, allowing the team invitation form to submit successfully.
+  - Aligned login properties and types between `App.tsx`, `useAuth.ts`, and `Login.tsx` to fix TypeScript compilation checks.
+  - Passed and rendered `teamError` and `teamMessage` feedback directly inside the `TeamCard` panel for inline user notifications.
+
 ## [1.1.2] - 2026-07-24
 
 ### Added

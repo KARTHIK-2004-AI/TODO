@@ -1,8 +1,11 @@
 import dotenv from 'dotenv';
 import path from 'path';
-dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
+if (process.env.NODE_ENV !== 'test') {
+  dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
+}
 
-import { PrismaClient } from '@prisma/client';
+
+import { PrismaClient } from '../prisma/client';
 
 const dbUrl = process.env.DATABASE_URL || 'file:./prisma/dev.db';
 

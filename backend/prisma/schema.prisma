@@ -5,6 +5,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  output   = "./client"
 }
 
 enum Role {
@@ -18,6 +19,7 @@ enum InviteStatus {
   ACCEPTED
   EXPIRED
   REVOKED
+  REJECTED
 }
 
 model User {
@@ -31,22 +33,28 @@ model User {
   timezone        String       @default("UTC")
   preferences     String       @default("{\"theme\":\"system\",\"notifications\":true,\"emailAlerts\":true,\"language\":\"en\"}")
   todos           Todo[]
+  assignedTodos   Todo[]       @relation("TodoAssignments")
   ownedTeams      Team[]
   teamMemberships TeamMember[]
   sentInvites     TeamInvite[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 }
 
 model Team {
-  id        String       @id @default(uuid())
-  name      String
-  createdAt DateTime     @default(now())
-  ownerId   String
-  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members   TeamMember[]
-  invites   TeamInvite[]
-  todos     Todo[]
+  id           String        @id @default(uuid())
+  name         String
+  createdAt    DateTime      @default(now())
+  ownerId      String
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  description  String        @default("")
+  purpose      String        @default("")
+  members      TeamMember[]
+  invites      TeamInvite[]
+  todos        Todo[]
+  activityLogs ActivityLog[]
 }
 
 model TeamMember {
@@ -81,8 +89,35 @@ model Todo {
   completed   Boolean  @default(false)
   userId      String
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teamId      String?
-  team        Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  teamId         String?
+  team           Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  assignedUserId String?
+  assignedUser   User?    @relation("TodoAssignments", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String
+  isRead    Boolean  @default(false)
+  metadata  String?
+  createdAt DateTime @default(now())
+}
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  teamId     String?
+  team       Team?    @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json
+  createdAt  DateTime @default(now())
 }

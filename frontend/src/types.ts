@@ -1,7 +1,7 @@
 export type AuthMode = 'login' | 'register'
 
 export type TeamRole = 'OWNER' | 'ADMIN' | 'MEMBER'
-export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED'
+export type InviteStatus = 'PENDING' | 'ACCEPTED' | 'EXPIRED' | 'REVOKED' | 'REJECTED'
 
 export interface User {
   id: string
@@ -17,6 +17,7 @@ export interface Todo {
   completed: boolean
   userId: string
   teamId?: string | null
+  assignedUserId?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -63,6 +64,8 @@ export interface TeamInvite {
 export interface Team {
   id: string
   name: string
+  description?: string
+  purpose?: string
   ownerId: string
   createdAt: string
   members?: TeamMember[]
@@ -86,3 +89,60 @@ export interface AcceptInviteResponse {
   message: string
   teamMember: TeamMember
 }
+
+export type NotificationType =
+  | 'TODO_CREATED'
+  | 'TODO_COMPLETED'
+  | 'TODO_UPDATED'
+  | 'TODO_DELETED'
+  | 'TEAM_RENAMED'
+  | 'TEAM_DELETED'
+  | 'TEAM_INVITE_RECEIVED'
+  | 'TEAM_INVITE_ACCEPTED'
+  | 'TEAM_MEMBER_REMOVED'
+  | 'TEAM_ROLE_UPDATED'
+
+export interface Notification {
+  id: string
+  userId: string
+  title: string
+  message: string
+  type: NotificationType | string
+  isRead: boolean
+  metadata?: string | null
+  createdAt: string
+}
+
+export interface ActivityLog {
+  id: string
+  teamId?: string | null
+  userId: string
+  action: string
+  entityType: string
+  entityId: string
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  metadata: any
+  createdAt: string
+  user?: User
+}
+
+export interface ActivityMeta {
+  page: number
+  limit: number
+  totalCount: number
+  totalPages: number
+}
+
+export interface ActivityResponse {
+  data: ActivityLog[]
+  meta: ActivityMeta
+}
+
+export type WorkspaceSelection =
+  | { kind: 'private' }
+  | { kind: 'team'; teamId: string }
+
+export type InviteRoute =
+  | { kind: 'tasks' }
+  | { kind: 'account' }
+  | { kind: 'accept-invite'; token?: string }

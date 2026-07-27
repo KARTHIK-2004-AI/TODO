@@ -54,3 +54,6 @@ powershell.cmd
 # Temporary & AI Agent workspace files
 .gemini/
 .agents/
+
+# Custom Prisma client build output
+backend/prisma/client/

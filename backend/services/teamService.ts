@@ -1,18 +1,21 @@
 import crypto from 'crypto';
 import prisma from '../database/client';
-import { Role, InviteStatus } from '@prisma/client';
+import { Role, InviteStatus } from '../prisma/client';
 import { AppError } from '../middleware/errorHandler';
+import { eventEmitter } from './eventService';
 
 export class TeamService {
   /**
    * Creates a new team and assigns creator as OWNER.
    */
-  static async createTeam(userId: string, name: string) {
-    return prisma.$transaction(async (tx) => {
+  static async createTeam(userId: string, name: string, description?: string, purpose?: string) {
+    const team = await prisma.$transaction(async (tx) => {
       const team = await tx.team.create({
         data: {
           name,
           ownerId: userId,
+          description: description || '',
+          purpose: purpose || '',
         },
       });
 
@@ -37,6 +40,12 @@ export class TeamService {
         },
       });
     });
+
+    if (team) {
+      eventEmitter.emit('team.created', { team, actingUserId: userId });
+    }
+
+    return team;
   }
 
   /**
@@ -125,7 +134,12 @@ export class TeamService {
       throw new AppError('Only the team owner can rename a team', 403, 'INSUFFICIENT_ROLE');
     }
 
-    return prisma.team.update({
+    const oldTeam = await prisma.team.findUnique({
+      where: { id: teamId },
+      select: { name: true },
+    });
+
+    const updatedTeam = await prisma.team.update({
       where: { id: teamId },
       data: { name },
       include: {
@@ -139,6 +153,10 @@ export class TeamService {
         invites: true,
       },
     });
+
+    eventEmitter.emit('team.renamed', { team: updatedTeam, oldName: oldTeam?.name || '', actingUserId });
+
+    return updatedTeam;
   }
 
   /**
@@ -164,6 +182,7 @@ export class TeamService {
 
     const targetMember = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId, userId: targetUserId } },
+      include: { user: true, team: true },
     });
 
     if (!targetMember) {
@@ -174,7 +193,9 @@ export class TeamService {
       throw new AppError('Cannot demote team owner', 403, 'INSUFFICIENT_ROLE');
     }
 
-    return prisma.teamMember.update({
+    const oldRole = targetMember.role;
+
+    const updatedMember = await prisma.teamMember.update({
       where: { id: targetMember.id },
       data: { role: newRole },
       include: {
@@ -183,6 +204,18 @@ export class TeamService {
         },
       },
     });
+
+    eventEmitter.emit('team.role_updated', {
+      teamId,
+      teamName: targetMember.team.name,
+      targetUserId,
+      targetName: targetMember.user.name,
+      oldRole,
+      newRole,
+      actingUserId,
+    });
+
+    return updatedMember;
   }
 
   /**
@@ -199,6 +232,7 @@ export class TeamService {
 
     const targetMember = await prisma.teamMember.findUnique({
       where: { teamId_userId: { teamId, userId: targetUserId } },
+      include: { user: true, team: true },
     });
 
     if (!targetMember) {
@@ -221,6 +255,14 @@ export class TeamService {
       where: { id: targetMember.id },
     });
 
+    eventEmitter.emit('team.member_removed', {
+      teamId,
+      teamName: targetMember.team.name,
+      targetUserId,
+      targetName: targetMember.user.name,
+      actingUserId,
+    });
+
     return { message: 'Member removed successfully' };
   }
 
@@ -230,6 +272,7 @@ export class TeamService {
   static async deleteTeam(actingUserId: string, teamId: string) {
     const team = await prisma.team.findUnique({
       where: { id: teamId },
+      include: { members: true },
     });
 
     if (!team) {
@@ -243,6 +286,9 @@ export class TeamService {
     if (!actingMember || actingMember.role !== Role.OWNER) {
       throw new AppError('Only the team owner can delete a team', 403, 'INSUFFICIENT_ROLE');
     }
+
+    const membersList = team.members.map((m) => m.userId);
+    const teamName = team.name;
 
     // Atomic 4-step transaction for non-destructive detach
     await prisma.$transaction(async (tx) => {
@@ -268,124 +314,13 @@ export class TeamService {
       });
     });
 
+    eventEmitter.emit('team.deleted', {
+      teamId,
+      teamName,
+      members: membersList,
+      actingUserId,
+    });
+
     return { message: 'Team deleted successfully' };
-  }
-
-  /**
-   * Invites a member to a team by email (OWNER or ADMIN).
-   */
-  static async inviteMember(actingUserId: string, teamId: string, email: string) {
-    const actingMember = await prisma.teamMember.findUnique({
-      where: { teamId_userId: { teamId, userId: actingUserId } },
-    });
-
-    if (!actingMember) {
-      throw new AppError('Requester is not a member of this team', 403, 'NOT_TEAM_MEMBER');
-    }
-
-    if (actingMember.role === Role.MEMBER) {
-      throw new AppError('Regular members cannot invite new members', 403, 'INSUFFICIENT_ROLE');
-    }
-
-    // Check if user with email is already a member
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      const existingMember = await prisma.teamMember.findUnique({
-        where: { teamId_userId: { teamId, userId: existingUser.id } },
-      });
-      if (existingMember) {
-        throw new AppError('User is already a member of this team', 400);
-      }
-    }
-
-    const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    return prisma.teamInvite.create({
-      data: {
-        teamId,
-        email,
-        invitedByUserId: actingUserId,
-        token,
-        status: InviteStatus.PENDING,
-        expiresAt,
-      },
-    });
-  }
-
-  /**
-   * Accepts a team invite using a token.
-   */
-  static async acceptInvite(userId: string, token: string) {
-    const invite = await prisma.teamInvite.findUnique({
-      where: { token },
-    });
-
-    if (!invite || invite.status !== InviteStatus.PENDING || invite.expiresAt < new Date()) {
-      throw new AppError('Invite expired, revoked, or invalid', 410, 'INVITE_EXPIRED_OR_REVOKED');
-    }
-
-    return prisma.$transaction(async (tx) => {
-      // Check if already a member
-      const existingMember = await tx.teamMember.findUnique({
-        where: { teamId_userId: { teamId: invite.teamId, userId } },
-      });
-
-      let teamMember = existingMember;
-      if (!existingMember) {
-        teamMember = await tx.teamMember.create({
-          data: {
-            teamId: invite.teamId,
-            userId,
-            role: Role.MEMBER,
-          },
-        });
-      }
-
-      await tx.teamInvite.update({
-        where: { id: invite.id },
-        data: { status: InviteStatus.ACCEPTED },
-      });
-
-      return {
-        message: 'Invite accepted successfully',
-        teamMember,
-      };
-    });
-  }
-
-  /**
-   * Revokes a pending invite (OWNER or ADMIN).
-   */
-  static async revokeInvite(actingUserId: string, teamId: string, inviteId: string) {
-    const actingMember = await prisma.teamMember.findUnique({
-      where: { teamId_userId: { teamId, userId: actingUserId } },
-    });
-
-    if (!actingMember) {
-      throw new AppError('Requester is not a member of this team', 403, 'NOT_TEAM_MEMBER');
-    }
-
-    if (actingMember.role === Role.MEMBER) {
-      throw new AppError('Regular members cannot revoke invites', 403, 'INSUFFICIENT_ROLE');
-    }
-
-    const invite = await prisma.teamInvite.findFirst({
-      where: { id: inviteId, teamId },
-    });
-
-    if (!invite) {
-      throw new AppError('Invite not found', 404);
-    }
-
-    await prisma.teamInvite.update({
-      where: { id: invite.id },
-      data: { status: InviteStatus.REVOKED },
-    });
-
-    return { message: 'Invite revoked successfully' };
   }
 }
