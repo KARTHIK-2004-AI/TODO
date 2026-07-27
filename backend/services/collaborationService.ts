@@ -3,7 +3,7 @@ import { TeamService } from './teamService';
 import { NotificationService } from './notificationService';
 import { ActivityService } from './activityService';
 import { TaskService, TaskFilterOptions } from './taskService';
-import { Role } from '../prisma/client';
+import { Role, TaskPriority, TaskStatus } from '../prisma/client';
 
 export class CollaborationService {
   // ----------------------------------------------------
@@ -78,7 +78,18 @@ export class CollaborationService {
 
   static async createTodo(
     userId: string,
-    data: { title: string; description?: string; teamId?: string; assignedUserId?: string }
+    data: {
+      title: string;
+      description?: string;
+      teamId?: string;
+      assignedToUserId?: string | null;
+      assignedUserId?: string | null;
+      priority?: TaskPriority;
+      status?: TaskStatus;
+      dueDate?: Date | string | null;
+      startDate?: Date | string | null;
+      estimatedHours?: number | null;
+    }
   ) {
     return TaskService.createTodo(userId, data);
   }
@@ -86,13 +97,67 @@ export class CollaborationService {
   static async updateTodo(
     userId: string,
     todoId: string,
-    data: { title?: string; description?: string; completed?: boolean; assignedUserId?: string | null }
+    data: {
+      title?: string;
+      description?: string;
+      completed?: boolean;
+      assignedToUserId?: string | null;
+      assignedUserId?: string | null;
+      priority?: TaskPriority;
+      status?: TaskStatus;
+      dueDate?: Date | string | null;
+      startDate?: Date | string | null;
+      estimatedHours?: number | null;
+    }
   ) {
     return TaskService.updateTodo(userId, todoId, data);
   }
 
   static async deleteTodo(userId: string, todoId: string) {
     return TaskService.deleteTodo(userId, todoId);
+  }
+
+  // --- Task Comments ---
+  static async addComment(userId: string, taskId: string, message: string) {
+    return TaskService.addComment(userId, taskId, message);
+  }
+
+  static async getComments(userId: string, taskId: string) {
+    return TaskService.getComments(userId, taskId);
+  }
+
+  static async updateComment(userId: string, commentId: string, message: string) {
+    return TaskService.updateComment(userId, commentId, message);
+  }
+
+  static async deleteComment(userId: string, commentId: string) {
+    return TaskService.deleteComment(userId, commentId);
+  }
+
+  // --- Task Attachments ---
+  static async addAttachment(
+    userId: string,
+    taskId: string,
+    data: { fileName: string; fileType: string; fileSize: number; storagePath: string }
+  ) {
+    return TaskService.addAttachment(userId, taskId, data);
+  }
+
+  static async getAttachments(userId: string, taskId: string) {
+    return TaskService.getAttachments(userId, taskId);
+  }
+
+  static async deleteAttachment(userId: string, attachmentId: string) {
+    return TaskService.deleteAttachment(userId, attachmentId);
+  }
+
+  // --- Task Assignment ---
+  static async assignTask(userId: string, taskId: string, assignedToUserId: string) {
+    return TaskService.assignTask(userId, taskId, assignedToUserId);
+  }
+
+  static async unassignTask(userId: string, taskId: string) {
+    return TaskService.unassignTask(userId, taskId);
   }
 
   // ----------------------------------------------------

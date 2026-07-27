@@ -39,6 +39,8 @@ model User {
   sentInvites     TeamInvite[]
   notifications   Notification[]
   activityLogs    ActivityLog[]
+  comments        TaskComment[]
+  attachments     TaskAttachment[]
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 }
@@ -83,18 +85,76 @@ model TeamInvite {
 }
 
 model Todo {
-  id          String   @id @default(uuid())
-  title       String
-  description String   @default("")
-  completed   Boolean  @default(false)
-  userId      String
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teamId         String?
-  team           Team?    @relation(fields: [teamId], references: [id], onDelete: SetNull)
-  assignedUserId String?
-  assignedUser   User?    @relation("TodoAssignments", fields: [assignedUserId], references: [id], onDelete: SetNull)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id               String           @id @default(uuid())
+  title            String
+  description      String           @default("")
+  completed        Boolean          @default(false)
+  userId           String
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teamId           String?
+  team             Team?            @relation(fields: [teamId], references: [id], onDelete: SetNull)
+  assignedToUserId String?
+  assignedToUser   User?            @relation("TodoAssignments", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  priority         TaskPriority     @default(MEDIUM)
+  status           TaskStatus       @default(TODO)
+  dueDate          DateTime?
+  startDate        DateTime?
+  estimatedHours   Int?
+  completedAt      DateTime?
+  comments         TaskComment[]
+  attachments      TaskAttachment[]
+  histories        TaskHistory[]
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  taskId    String
+  task      Todo     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model TaskAttachment {
+  id               String   @id @default(uuid())
+  taskId           String
+  task             Todo     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  uploadedByUserId String
+  uploader         User     @relation(fields: [uploadedByUserId], references: [id], onDelete: Cascade)
+  fileName         String
+  fileType         String
+  fileSize         Int
+  storagePath      String
+  createdAt        DateTime @default(now())
+}
+
+model TaskHistory {
+  id            String   @id @default(uuid())
+  taskId        String
+  task          Todo     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  performedBy   String
+  action        String
+  previousValue String?  @db.Text
+  newValue      String?  @db.Text
+  createdAt     DateTime @default(now())
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  IN_REVIEW
+  DONE
 }
 
 model Notification {

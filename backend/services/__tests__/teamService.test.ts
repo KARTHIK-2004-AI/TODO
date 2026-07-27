@@ -173,7 +173,7 @@ describe('CollaborationService Integration Tests', () => {
       teamId: team!.id,
       assignedUserId: userB.id,
     })
-    expect(assignedTodo.assignedUserId).toBe(userB.id)
+    expect(assignedTodo.assignedToUserId).toBe(userB.id)
 
     // Assigning personal task to User B should throw
     await expect(

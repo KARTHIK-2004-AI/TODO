@@ -16,6 +16,8 @@ const mockTodos: Todo[] = [
     description: 'First task description',
     completed: false,
     userId: 'user-1',
+    priority: 'MEDIUM',
+    status: 'TODO',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   },
@@ -83,6 +85,16 @@ describe('Dashboard Component', () => {
         onRemoveTodo={mockOnRemoveTodo}
         canPerformAction={mockCanPerformAction}
         getRoleLabel={mockGetRoleLabel}
+        
+        priorityFilter="all"
+        setPriorityFilter={vi.fn()}
+        statusFilter="all"
+        setStatusFilter={vi.fn()}
+        assigneeFilter="all"
+        setAssigneeFilter={vi.fn()}
+        dueFilter="all"
+        setDueFilter={vi.fn()}
+        onReloadTodos={vi.fn()}
       />
     )
 

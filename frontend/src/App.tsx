@@ -94,6 +94,14 @@ function App() {
     handleRemoveTodo,
     visibleTodos,
     completedCount,
+    priorityFilter,
+    setPriorityFilter,
+    statusFilter,
+    setStatusFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    dueFilter,
+    setDueFilter,
   } = useTodos(workspace)
 
   // Hook 3: Teams
@@ -401,6 +409,15 @@ function App() {
           }}
           canPerformAction={canPerformAction}
           getRoleLabel={getRoleLabel}
+          priorityFilter={priorityFilter}
+          setPriorityFilter={setPriorityFilter}
+          statusFilter={statusFilter}
+          setStatusFilter={setStatusFilter}
+          assigneeFilter={assigneeFilter}
+          setAssigneeFilter={setAssigneeFilter}
+          dueFilter={dueFilter}
+          setDueFilter={setDueFilter}
+          onReloadTodos={loadTodos}
         />
       )}
     </Layout>

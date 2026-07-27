@@ -10,6 +10,42 @@ export interface User {
   avatarUrl?: string
 }
 
+export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'IN_REVIEW' | 'DONE'
+
+export interface TaskComment {
+  id: string
+  taskId: string
+  userId: string
+  message: string
+  createdAt: string
+  updatedAt: string
+  user: User
+}
+
+export interface TaskAttachment {
+  id: string
+  taskId: string
+  uploadedByUserId: string
+  fileName: string
+  fileType: string
+  fileSize: number
+  storagePath: string
+  createdAt: string
+  uploader: User
+}
+
+export interface TaskHistory {
+  id: string
+  taskId: string
+  performedBy: string
+  action: string
+  previousValue: string | null
+  newValue: string | null
+  createdAt: string
+  performer: User
+}
+
 export interface Todo {
   id: string
   title: string
@@ -17,7 +53,17 @@ export interface Todo {
   completed: boolean
   userId: string
   teamId?: string | null
-  assignedUserId?: string | null
+  assignedToUserId?: string | null
+  assignedUserId?: string | null // compatibility
+  priority: TaskPriority
+  status: TaskStatus
+  startDate?: string | null
+  dueDate?: string | null
+  estimatedHours?: number | null
+  completedAt?: string | null
+  comments?: TaskComment[]
+  attachments?: TaskAttachment[]
+  histories?: TaskHistory[]
   createdAt: string
   updatedAt: string
 }

@@ -1,8 +1,9 @@
-import { type FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 import type { Team, TeamMember, TeamRole, Todo, User, WorkspaceSelection } from '../types'
 import { TodoForm } from '../components/TodoForm'
 import { TodoItem } from '../components/TodoItem'
 import { TeamCard } from '../components/TeamCard'
+import { TaskDetailsDrawer } from '../components/TaskDetailsDrawer'
 
 interface DashboardProps {
   user: User
@@ -58,6 +59,17 @@ interface DashboardProps {
       | 'create'
   ) => boolean
   getRoleLabel: (role: TeamRole) => string
+
+  // Sprint 5 filter props
+  priorityFilter: string
+  setPriorityFilter: (val: string) => void
+  statusFilter: string
+  setStatusFilter: (val: string) => void
+  assigneeFilter: string
+  setAssigneeFilter: (val: string) => void
+  dueFilter: string
+  setDueFilter: (val: string) => void
+  onReloadTodos: () => void
 }
 
 export function Dashboard({
@@ -102,14 +114,41 @@ export function Dashboard({
   onInviteAgain,
   canPerformAction,
   getRoleLabel,
+
+  // Sprint 5 props
+  priorityFilter,
+  setPriorityFilter,
+  statusFilter,
+  setStatusFilter,
+  assigneeFilter,
+  setAssigneeFilter,
+  dueFilter,
+  setDueFilter,
+  onReloadTodos,
 }: DashboardProps) {
+  const [layoutMode, setLayoutMode] = useState<'list' | 'board'>('list')
+  const [selectedTodoId, setSelectedTodoId] = useState<string | null>(null)
+
   const handleCreateTeamSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     onCreateTeam()
   }
 
+  // Group todos by columns for Kanban Board
+  const boardColumns = {
+    TODO: visibleTodos.filter((t) => t.status === 'TODO'),
+    IN_PROGRESS: visibleTodos.filter((t) => t.status === 'IN_PROGRESS'),
+    IN_REVIEW: visibleTodos.filter((t) => t.status === 'IN_REVIEW'),
+    DONE: visibleTodos.filter((t) => t.status === 'DONE'),
+  }
+
+  const handleTaskUpdatedInDrawer = () => {
+    onReloadTodos()
+  }
+
   return (
     <main className="content-grid">
+      {/* LEFT COLUMN: CONTEXT SELECTOR & CREATOR */}
       <section className="panel">
         <div className="panel-heading">
           <div>
@@ -181,6 +220,7 @@ export function Dashboard({
         {teamMessage ? <p className="status-text">{teamMessage}</p> : null}
       </section>
 
+      {/* RIGHT COLUMN: TASK CREATION FORM */}
       <section className="panel">
         <div className="panel-heading">
           <div>
@@ -209,67 +249,216 @@ export function Dashboard({
         />
       </section>
 
-      <section className="panel">
-        <div className="panel-heading">
+      {/* FULL WIDTH: WORKSPACE TASK BOARD / LIST */}
+      <section className="panel board-panel-full">
+        <div className="panel-heading flex-heading">
           <div>
             <p className="eyebrow">Today’s progress</p>
-            <h2>Task list</h2>
+            <h2>Task Board</h2>
           </div>
-          <div className="filters">
+          
+          <div className="layout-mode-switcher">
             <button
               type="button"
-              className={filter === 'all' ? 'active' : ''}
-              onClick={() => setFilter('all')}
+              className={layoutMode === 'list' ? 'active' : 'secondary'}
+              onClick={() => setLayoutMode('list')}
             >
-              All
+              List View
             </button>
             <button
               type="button"
-              className={filter === 'active' ? 'active' : ''}
-              onClick={() => setFilter('active')}
+              className={layoutMode === 'board' ? 'active' : 'secondary'}
+              onClick={() => setLayoutMode('board')}
             >
-              Active
-            </button>
-            <button
-              type="button"
-              className={filter === 'completed' ? 'active' : ''}
-              onClick={() => setFilter('completed')}
-            >
-              Completed
+              Kanban Board
             </button>
           </div>
         </div>
-        <div className="search-box">
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search todos"
-          />
+
+        {/* ADVANCED FILTERS PANEL */}
+        <div className="advanced-filters-panel">
+          {/* Text Search */}
+          <div className="filter-item search-filter">
+            <label>Search</label>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search tasks..."
+            />
+          </div>
+
+          {/* Completed Tab Switcher (only relevant in List View) */}
+          {layoutMode === 'list' && (
+            <div className="filter-item">
+              <label>Completion</label>
+              <div className="filter-segmented-control">
+                <button
+                  type="button"
+                  className={filter === 'all' ? 'active' : ''}
+                  onClick={() => setFilter('all')}
+                >
+                  All
+                </button>
+                <button
+                  type="button"
+                  className={filter === 'active' ? 'active' : ''}
+                  onClick={() => setFilter('active')}
+                >
+                  Active
+                </button>
+                <button
+                  type="button"
+                  className={filter === 'completed' ? 'active' : ''}
+                  onClick={() => setFilter('completed')}
+                >
+                  Done
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Priority filter */}
+          <div className="filter-item">
+            <label>Priority</label>
+            <select
+              value={priorityFilter}
+              onChange={(e) => setPriorityFilter(e.target.value)}
+            >
+              <option value="all">All Priorities</option>
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent</option>
+            </select>
+          </div>
+
+          {/* Status filter (only list mode) */}
+          {layoutMode === 'list' && (
+            <div className="filter-item">
+              <label>Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <option value="all">All Statuses</option>
+                <option value="TODO">To Do</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="IN_REVIEW">In Review</option>
+                <option value="DONE">Done</option>
+              </select>
+            </div>
+          )}
+
+          {/* Assignee filter */}
+          {workspace.kind === 'team' && (
+            <div className="filter-item">
+              <label>Assignee</label>
+              <select
+                value={assigneeFilter}
+                onChange={(e) => setAssigneeFilter(e.target.value)}
+              >
+                <option value="all">All Assignees</option>
+                {selectedTeam?.members?.map((m) => (
+                  <option key={m.userId} value={m.userId}>
+                    {m.user?.name || m.userId}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Due date filter */}
+          <div className="filter-item">
+            <label>Due Date</label>
+            <select
+              value={dueFilter}
+              onChange={(e) => setDueFilter(e.target.value)}
+            >
+              <option value="all">Any Time</option>
+              <option value="overdue">Overdue</option>
+              <option value="today">Today</option>
+              <option value="tomorrow">Tomorrow</option>
+              <option value="future">Future Tasks</option>
+            </select>
+          </div>
         </div>
+
         {statusMessage ? <p className="status-text">{statusMessage}</p> : null}
         {todoLoading ? <p className="status-text">Loading tasks…</p> : null}
-        <ul className="todo-list">
-          {visibleTodos.map((todo) => (
-            <TodoItem
-              key={todo.id}
-              todo={todo}
-              onToggle={onToggleTodo}
-              onRemove={onRemoveTodo}
-              isDeleting={pendingDeleteTodoId === todo.id}
-              teamMembers={selectedTeam?.members || []}
-              onAssign={
-                (currentRole === 'OWNER' || currentRole === 'ADMIN') && onAssignTodo
-                  ? onAssignTodo
-                  : undefined
-              }
-            />
-          ))}
-          {!todoLoading && visibleTodos.length === 0 ? (
-            <li className="empty-state">No todos match this view yet.</li>
-          ) : null}
-        </ul>
+
+        {/* LAYOUT RENDERER */}
+        {layoutMode === 'list' ? (
+          <ul className="todo-list">
+            {visibleTodos.map((todo) => (
+              <TodoItem
+                key={todo.id}
+                todo={todo}
+                onToggle={onToggleTodo}
+                onRemove={onRemoveTodo}
+                isDeleting={pendingDeleteTodoId === todo.id}
+                teamMembers={selectedTeam?.members || []}
+                onAssign={onAssignTodo}
+                onClickDetails={(id) => setSelectedTodoId(id)}
+              />
+            ))}
+            {!todoLoading && visibleTodos.length === 0 ? (
+              <li className="empty-state">No tasks match your filter parameters.</li>
+            ) : null}
+          </ul>
+        ) : (
+          /* KANBAN BOARD VIEW */
+          <div className="kanban-board">
+            {Object.entries(boardColumns).map(([colStatus, colTodos]) => (
+              <div key={colStatus} className="kanban-column">
+                <div className="kanban-column-header">
+                  <h3>{colStatus.replace('_', ' ')}</h3>
+                  <span className="kanban-column-count">{colTodos.length}</span>
+                </div>
+                <div className="kanban-column-body">
+                  {colTodos.map((todo) => (
+                    <div
+                      key={todo.id}
+                      className="kanban-card"
+                      onClick={() => setSelectedTodoId(todo.id)}
+                    >
+                      <div className="kanban-card-title">{todo.title}</div>
+                      {todo.description && (
+                        <div className="kanban-card-desc">{todo.description}</div>
+                      )}
+                      
+                      <div className="kanban-card-meta">
+                        <span className={`badge-priority badge-priority-${todo.priority.toLowerCase()}`}>
+                          {todo.priority}
+                        </span>
+
+                        {todo.dueDate && (
+                          <span className="kanban-card-date">
+                            📅 {new Date(todo.dueDate).toLocaleDateString()}
+                          </span>
+                        )}
+
+                        <div className="kanban-card-counters">
+                          {todo.comments && todo.comments.length > 0 && (
+                            <span>💬 {todo.comments.length}</span>
+                          )}
+                          {todo.attachments && todo.attachments.length > 0 && (
+                            <span>📎 {todo.attachments.length}</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                  {colTodos.length === 0 && (
+                    <div className="kanban-column-empty">No tasks</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </section>
 
+      {/* TEAM SETTINGS */}
       {selectedTeam ? (
         <TeamCard
           selectedTeam={selectedTeam}
@@ -294,6 +483,18 @@ export function Dashboard({
           onInviteAgain={onInviteAgain}
         />
       ) : null}
+
+      {/* TASK DETAILS MODAL DRAWER OVERLAY */}
+      {selectedTodoId && (
+        <TaskDetailsDrawer
+          todoId={selectedTodoId}
+          currentUser={user}
+          teamMembers={selectedTeam?.members || []}
+          teamRole={currentRole}
+          onClose={() => setSelectedTodoId(null)}
+          onTaskUpdated={handleTaskUpdatedInDrawer}
+        />
+      )}
     </main>
   )
 }

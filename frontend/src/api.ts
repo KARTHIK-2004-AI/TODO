@@ -11,6 +11,8 @@ import type {
   Todo,
   Notification,
   ActivityResponse,
+  TaskComment,
+  TaskAttachment,
 } from './types'
 
 const API_BASE_URL = '/api'
@@ -82,12 +84,22 @@ export async function register(email: string, password: string, name: string): P
   })
 }
 
-export async function fetchTodos(completed?: boolean, search?: string, teamId?: string): Promise<Todo[]> {
+export async function fetchTodos(
+  completed?: boolean,
+  search?: string,
+  teamId?: string,
+  priority?: string,
+  status?: string,
+  assigneeId?: string
+): Promise<Todo[]> {
   const params = new URLSearchParams()
 
   if (completed !== undefined) params.set('completed', String(completed))
   if (search) params.set('search', search)
   if (teamId) params.set('teamId', teamId)
+  if (priority && priority !== 'all') params.set('priority', priority)
+  if (status && status !== 'all') params.set('status', status)
+  if (assigneeId && assigneeId !== 'all') params.set('assigneeId', assigneeId)
 
   const query = params.toString()
   return request<Todo[]>(`/todos${query ? `?${query}` : ''}`)
@@ -295,4 +307,96 @@ export async function fetchTeamActivity(teamId: string, page = 1, limit = 10, ty
   params.set('limit', String(limit))
   if (type) params.set('type', type)
   return request<ActivityResponse>(`/teams/${teamId}/activity?${params.toString()}`)
+}
+
+// Sprint 5 API additions
+export async function fetchComments(taskId: string): Promise<TaskComment[]> {
+  return request<TaskComment[]>(`/todos/${taskId}/comments`)
+}
+
+export async function addComment(taskId: string, message: string): Promise<TaskComment> {
+  return request<TaskComment>(`/todos/${taskId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ message }),
+  })
+}
+
+export async function updateComment(commentId: string, message: string): Promise<TaskComment> {
+  return request<TaskComment>(`/comments/${commentId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ message }),
+  })
+}
+
+export async function deleteComment(commentId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/comments/${commentId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function fetchAttachments(taskId: string): Promise<TaskAttachment[]> {
+  return request<TaskAttachment[]>(`/todos/${taskId}/attachments`)
+}
+
+export async function addAttachment(
+  taskId: string,
+  data: { fileName: string; fileType: string; fileSize: number; storagePath: string }
+): Promise<TaskAttachment> {
+  return request<TaskAttachment>(`/todos/${taskId}/attachments`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  })
+}
+
+export async function deleteAttachment(attachmentId: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/attachments/${attachmentId}`, {
+    method: 'DELETE',
+  })
+}
+
+export async function assignTask(taskId: string, assignedToUserId: string): Promise<Todo> {
+  return request<Todo>(`/todos/${taskId}/assign`, {
+    method: 'POST',
+    body: JSON.stringify({ assignedToUserId }),
+  })
+}
+
+export async function unassignTask(taskId: string): Promise<Todo> {
+  return request<Todo>(`/todos/${taskId}/unassign`, {
+    method: 'POST',
+  })
+}
+
+export async function downloadAttachment(attachmentId: string, defaultFileName: string): Promise<void> {
+  const token = localStorage.getItem('authToken')
+  const response = await fetch(`${API_BASE_URL}/attachments/${attachmentId}/download`, {
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error('Failed to download file')
+  }
+
+  const blob = await response.blob()
+  const url = window.URL.createObjectURL(blob)
+
+  let fileName = defaultFileName
+  const disposition = response.headers.get('content-disposition')
+  if (disposition && disposition.indexOf('attachment') !== -1) {
+    const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/
+    const matches = filenameRegex.exec(disposition)
+    if (matches != null && matches[1]) {
+      fileName = decodeURIComponent(matches[1].replace(/['"]/g, ''))
+    }
+  }
+
+  const a = document.createElement('a')
+  a.href = url
+  a.download = fileName
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  window.URL.revokeObjectURL(url)
 }

@@ -7,6 +7,7 @@ interface TodoItemProps {
   isDeleting: boolean
   teamMembers?: TeamMember[]
   onAssign?: (todoId: string, assignedUserId: string | null) => void
+  onClickDetails?: (id: string) => void
 }
 
 export function TodoItem({
@@ -16,31 +17,112 @@ export function TodoItem({
   isDeleting,
   teamMembers = [],
   onAssign,
+  onClickDetails,
 }: TodoItemProps) {
-  const assignee = todo.assignedUserId
-    ? teamMembers.find((m) => m.userId === todo.assignedUserId)?.user
+  const assigneeId = todo.assignedToUserId || todo.assignedUserId
+  const assignee = assigneeId
+    ? teamMembers.find((m) => m.userId === assigneeId || m.user?.id === assigneeId)?.user
     : null
+
+  // Format priority colors
+  const getPriorityClass = (priority: string) => {
+    switch (priority) {
+      case 'LOW':
+        return 'badge-priority-low'
+      case 'MEDIUM':
+        return 'badge-priority-medium'
+      case 'HIGH':
+        return 'badge-priority-high'
+      case 'URGENT':
+        return 'badge-priority-urgent'
+      default:
+        return 'badge-priority-medium'
+    }
+  }
+
+  // Format friendly due dates
+  const formatFriendlyDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return ''
+    const d = new Date(dateStr)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const target = new Date(d)
+    target.setHours(0, 0, 0, 0)
+
+    const diffTime = target.getTime() - today.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) return 'Today'
+    if (diffDays === 1) return 'Tomorrow'
+    if (diffDays === -1) return 'Overdue (Yesterday)'
+    if (diffDays < -1) return `Overdue (${Math.abs(diffDays)} days ago)`
+    if (diffDays > 1 && diffDays <= 3) return `${diffDays} days left`
+    return d.toLocaleDateString()
+  }
+
+  const friendlyDue = formatFriendlyDate(todo.dueDate)
+
+  const priority = todo.priority || 'MEDIUM'
+  const status = todo.status || 'TODO'
 
   return (
     <li className={`todo-item ${todo.completed ? 'completed' : ''}`}>
-      <label className="todo-main">
+      <div className="todo-main-wrapper">
         <input
           type="checkbox"
+          className="todo-checkbox"
           checked={todo.completed}
           onChange={() => onToggle(todo)}
         />
-        <div>
-          <strong>{todo.title}</strong>
-          {todo.description ? <p>{todo.description}</p> : null}
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginTop: '6px' }}>
+        <div className="todo-details-content" onClick={() => onClickDetails && onClickDetails(todo.id)}>
+          <div className="todo-title-row">
+            <span className="todo-title-text">{todo.title}</span>
+            <div className="todo-badges-wrapper">
+              <span className={`badge-priority ${getPriorityClass(priority)}`}>
+                {priority}
+              </span>
+              <span className={`badge-status badge-status-${status.toLowerCase()}`}>
+                {status.replace('_', ' ')}
+              </span>
+            </div>
+          </div>
+          
+          {todo.description ? <p className="todo-desc-text">{todo.description}</p> : null}
+          
+          <div className="todo-meta-row">
             {todo.teamId ? <span className="todo-badge">Shared</span> : null}
+            
+            {friendlyDue ? (
+              <span className={`todo-due-badge ${friendlyDue.startsWith('Overdue') ? 'due-overdue' : 'due-future'}`}>
+                📅 {friendlyDue}
+              </span>
+            ) : null}
+
+            {todo.estimatedHours ? (
+              <span className="todo-badge border-badge">
+                ⏱️ {todo.estimatedHours}h
+              </span>
+            ) : null}
+
+            {/* Comments and attachments counter */}
+            {todo.comments && todo.comments.length > 0 ? (
+              <span className="todo-badge border-badge">
+                💬 {todo.comments.length}
+              </span>
+            ) : null}
+
+            {todo.attachments && todo.attachments.length > 0 ? (
+              <span className="todo-badge border-badge">
+                📎 {todo.attachments.length}
+              </span>
+            ) : null}
+            
             {todo.teamId && teamMembers.length > 0 && onAssign ? (
-              <div className="todo-assignee-select" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ fontSize: '0.75rem', color: '#666' }}>Assignee:</span>
+              <div className="todo-assignee-select" onClick={(e) => e.stopPropagation()}>
+                <span>Assignee:</span>
                 <select
-                  value={todo.assignedUserId || ''}
+                  value={assigneeId || ''}
                   onChange={(e) => onAssign(todo.id, e.target.value || null)}
-                  style={{ fontSize: '0.75rem', padding: '1px 3px', borderRadius: '4px', border: '1px solid #ddd', background: '#f9f9f9' }}
                 >
                   <option value="">Unassigned</option>
                   {teamMembers.map((m) => (
@@ -51,13 +133,13 @@ export function TodoItem({
                 </select>
               </div>
             ) : assignee ? (
-              <span className="todo-badge" style={{ backgroundColor: '#e2e8f0', color: '#475569' }}>
+              <span className="todo-badge assignee-badge">
                 👤 {assignee.name}
               </span>
             ) : null}
           </div>
         </div>
-      </label>
+      </div>
       <button
         type="button"
         className="delete"
@@ -69,3 +151,4 @@ export function TodoItem({
     </li>
   )
 }
+export default TodoItem;

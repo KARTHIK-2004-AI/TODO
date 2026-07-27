@@ -29,6 +29,9 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
   const token = authHeader.split(' ')[1];
 
   try {
+    if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'super-secret-key-1234-change-this-in-production')) {
+      throw new Error('CRITICAL: JWT_SECRET must be securely set in production mode.');
+    }
     const secret = process.env.JWT_SECRET || 'super-secret-key-1234-change-this-in-production';
     const decoded = jwt.verify(token, secret) as JWTPayload;
 

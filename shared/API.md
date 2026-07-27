@@ -189,7 +189,7 @@ Retrieves a specific todo by ID.
 ---
 
 ### PUT /api/todos/:id
-Updates a specific todo by ID. (For shared team todos, any member of the team can edit).
+Updates a specific todo by ID. (For shared team todos, only the assigned member, team OWNER, or team ADMIN can edit).
 
 **Request**
 ```json
@@ -217,7 +217,7 @@ Updates a specific todo by ID. (For shared team todos, any member of the team ca
 ---
 
 ### DELETE /api/todos/:id
-Deletes a specific todo by ID. (For shared team todos, any member of the team can delete).
+Deletes a specific todo by ID. (For shared team todos, only the task creator, team OWNER, or team ADMIN can delete).
 
 **Response (200 OK)**
 ```json
@@ -767,3 +767,204 @@ Retrieves the paginated activity timeline for a specific team. Requester must be
   }
 }
 ```
+
+---
+
+## Project Execution Engine (Sprint 5 Endpoints)
+
+All task/todo paths are mounted interchangeably on both `/api/todos` and `/api/tasks`.
+
+### Task Extensions Payload fields
+The fields returned by task details are extended with:
+- `priority` (string enum: `LOW`, `MEDIUM`, `HIGH`, `URGENT`): Task urgency priority.
+- `status` (string enum: `TODO`, `IN_PROGRESS`, `IN_REVIEW`, `DONE`): Task lifecycle status.
+- `startDate` (string, ISO Date, nullable): Planned start timestamp.
+- `dueDate` (string, ISO Date, nullable): Planned deadline timestamp (must be after `startDate`).
+- `estimatedHours` (number, integer, nullable): Estimated developer effort hours.
+- `assignedToUserId` (string, UUID, nullable): User assigned to task. Can be mapped as `assignedUserId` payload key in requests for compatibility.
+- `completedAt` (string, ISO Date, nullable): Timestamp when state moved to `DONE`.
+
+---
+
+### Task Assignments
+
+#### POST /api/todos/:id/assign
+Assigns a user to a task. Triggering an assignment creates a notification, logs a system activity log, and appends a `TASK_ASSIGNED` entry in the task's history ledger.
+
+**Request**
+```json
+{
+  "assignedToUserId": "user-uuid-456"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "id": "todo-uuid-456",
+  "assignedToUserId": "user-uuid-456",
+  "status": "TODO"
+}
+```
+
+#### POST /api/todos/:id/unassign
+Clears the assignee assigned to a task.
+
+**Response (200 OK)**
+```json
+{
+  "id": "todo-uuid-456",
+  "assignedToUserId": null
+}
+```
+
+---
+
+### Task Discussion Comments
+
+#### POST /api/todos/:id/comments
+Adds a commentary post to the task's discussion timeline. Creates a `COMMENT_ADDED` audit entry.
+
+**Request**
+```json
+{
+  "message": "Let's align on the schema requirements before implementing."
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "id": "comment-uuid-001",
+  "taskId": "todo-uuid-456",
+  "userId": "user-uuid-123",
+  "message": "Let's align on the schema requirements before implementing.",
+  "createdAt": "2026-07-27T12:00:00.000Z",
+  "updatedAt": "2026-07-27T12:00:00.000Z"
+}
+```
+
+#### GET /api/todos/:id/comments
+Lists task comments ordered from oldest to newest.
+
+**Response (200 OK)**
+```json
+[
+  {
+    "id": "comment-uuid-001",
+    "taskId": "todo-uuid-456",
+    "message": "Let's align on the schema requirements before implementing.",
+    "user": {
+      "id": "user-uuid-123",
+      "name": "Jane Doe",
+      "email": "jane@example.com"
+    }
+  }
+]
+```
+
+#### PUT /api/comments/:commentId
+Edits a user's own comment. Throws 403 if modified by a different user.
+
+**Request**
+```json
+{
+  "message": "Updated commentary message"
+}
+```
+
+**Response (200 OK)**
+```json
+{
+  "id": "comment-uuid-001",
+  "message": "Updated commentary message"
+}
+```
+
+#### DELETE /api/comments/:commentId
+Deletes a user's own comment.
+
+**Response (200 OK)**
+```json
+{
+  "message": "Comment deleted successfully"
+}
+```
+
+---
+
+### Task Attachments Metadata
+
+#### POST /api/todos/:id/attachments
+Uploads attachment meta logs to the task ledger. Logs an `ATTACHMENT_UPLOADED` history entry.
+
+**Request**
+```json
+{
+  "fileName": "specs.pdf",
+  "fileType": "application/pdf",
+  "fileSize": 2048576,
+  "storagePath": "/uploads/specs.pdf"
+}
+```
+
+**Response (201 Created)**
+```json
+{
+  "id": "attachment-uuid-999",
+  "taskId": "todo-uuid-456",
+  "fileName": "specs.pdf",
+  "fileType": "application/pdf",
+  "fileSize": 2048576,
+  "storagePath": "/uploads/specs.pdf"
+}
+```
+
+#### GET /api/todos/:id/attachments
+Retrieves all files attached to a specific task.
+
+**Response (200 OK)**
+```json
+[
+  {
+    "id": "attachment-uuid-999",
+    "fileName": "specs.pdf",
+    "fileSize": 2048576,
+    "uploader": {
+      "id": "user-uuid-123",
+      "name": "Jane Doe"
+    }
+  }
+]
+```
+
+#### DELETE /api/attachments/:attachmentId
+Deletes the attachment metadata. Regular members can only delete their own uploads; owners/admins can delete any attachment.
+
+**Response (200 OK)**
+```json
+{
+  "message": "Attachment deleted successfully"
+}
+```
+
+---
+
+#### GET /api/attachments/:attachmentId/download
+Downloads the specified attachment file. (Also accessible via `/attachments/:attachmentId/download` and `/api/todos/attachments/:attachmentId/download`).
+
+**Response (200 OK)**
+Returns the binary file payload or a mock content stream matching the registered file metadata parameters.
+
+---
+
+### Sprint 5 Action Permission Matrix
+
+| Actor Role | Upload Attachments | Download Attachments | Delete Attachments | Move Status to DONE | Assign / Unassign Tasks |
+|:---|:---:|:---:|:---:|:---:|:---:|
+| **Workspace OWNER** | ✅ | ✅ | ✅ (Any) | ✅ | ✅ |
+| **Workspace ADMIN** | ✅ | ✅ | ✅ (Any) | ✅ | ✅ |
+| **Assigned MEMBER** | ✅ | ✅ | ✅ (Own uploads only) | ❌ (Submit for review only) | ❌ |
+| **Regular MEMBER** | ❌ | ✅ | ✅ (Own uploads only) | ❌ | ❌ |
+| **Guest / Non-member** | ❌ | ❌ | ❌ | ❌ | ❌ |
+

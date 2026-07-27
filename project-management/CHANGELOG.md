@@ -2,6 +2,16 @@
 
 All notable changes to the TODO Application Backend will be documented in this file.
 
+## [1.3.0] - 2026-07-27
+
+### Added
+- **Extended Task Parameters**: Added planning and execution columns to `Todo` model (`priority`, `status`, `dueDate`, `startDate`, `estimatedHours`, `completedAt`).
+- **Discussion Comments Engine**: Implemented `TaskComment` model and CRUD service endpoints allowing team members to discuss tasks.
+- **Attachment Metadata Module**: Implemented `TaskAttachment` model and endpoints allowing attachment uploading/listing/deletion metadata logs.
+- **Audit History Trail Ledger**: Implemented `TaskHistory` model capturing task transitions (`TASK_CREATED`, `TASK_ASSIGNED`, `STATUS_CHANGED`, `COMMENT_ADDED`, `ATTACHMENT_UPLOADED`, `PRIORITY_CHANGED`, `DUE_DATE_CHANGED`, `REVIEW_APPROVED`, `REVIEW_REJECTED`).
+- **Strict State Transition Controls**: Implemented transition permission checks enforcing sequence rules and restricting direct DONE state bypass for members.
+- **Standalone Global Routes**: Registered direct `/api/comments` and `/api/attachments` endpoints in index server file for streamlined clients.
+
 ## [1.2.0] - 2026-07-26
 
 ### Added

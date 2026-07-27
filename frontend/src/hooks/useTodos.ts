@@ -13,6 +13,12 @@ export function useTodos(workspace: WorkspaceSelection) {
   const [statusMessage, setStatusMessage] = useState('')
   const [pendingDeleteTodoId, setPendingDeleteTodoId] = useState<string | null>(null)
 
+  // Sprint 5 filters
+  const [priorityFilter, setPriorityFilter] = useState<string>('all')
+  const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [assigneeFilter, setAssigneeFilter] = useState<string>('all')
+  const [dueFilter, setDueFilter] = useState<string>('all')
+
   const loadTodos = useCallback(async () => {
     if (!localStorage.getItem('authToken')) return
     setTodoLoading(true)
@@ -21,7 +27,10 @@ export function useTodos(workspace: WorkspaceSelection) {
       const data = await fetchTodos(
         filter === 'completed' ? true : filter === 'active' ? false : undefined,
         query || undefined,
-        teamId
+        teamId,
+        priorityFilter === 'all' ? undefined : priorityFilter,
+        statusFilter === 'all' ? undefined : statusFilter,
+        assigneeFilter === 'all' ? undefined : assigneeFilter
       )
       setTodos(data)
       setStatusMessage('')
@@ -30,7 +39,7 @@ export function useTodos(workspace: WorkspaceSelection) {
     } finally {
       setTodoLoading(false)
     }
-  }, [filter, query, workspace])
+  }, [filter, query, workspace, priorityFilter, statusFilter, assigneeFilter])
 
   const submitTodo = async () => {
     if (!todoForm.title.trim()) {
@@ -80,7 +89,7 @@ export function useTodos(workspace: WorkspaceSelection) {
 
   const handleUpdateAssignee = async (todoId: string, assignedUserId: string | null) => {
     try {
-      const updated = await updateTodo(todoId, { assignedUserId })
+      const updated = await updateTodo(todoId, { assignedToUserId: assignedUserId })
       setTodos((current) =>
         current.map((item) => (item.id === todoId ? updated : item))
       )
@@ -106,11 +115,31 @@ export function useTodos(workspace: WorkspaceSelection) {
 
   const visibleTodos = useMemo(() => {
     return todos.filter((todo) => {
-      if (filter === 'active') return !todo.completed
-      if (filter === 'completed') return todo.completed
+      // Completed status tab filter
+      if (filter === 'active' && todo.completed) return false
+      if (filter === 'completed' && !todo.completed) return false
+
+      // Due Date relative filter
+      if (dueFilter !== 'all') {
+        if (!todo.dueDate) return false
+        const d = new Date(todo.dueDate)
+        const today = new Date()
+        today.setHours(0, 0, 0, 0)
+        const target = new Date(d)
+        target.setHours(0, 0, 0, 0)
+
+        const diffTime = target.getTime() - today.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+        if (dueFilter === 'overdue' && diffDays >= 0) return false
+        if (dueFilter === 'today' && diffDays !== 0) return false
+        if (dueFilter === 'tomorrow' && diffDays !== 1) return false
+        if (dueFilter === 'future' && diffDays <= 1) return false
+      }
+
       return true
     })
-  }, [todos, filter])
+  }, [todos, filter, dueFilter])
 
   const completedCount = useMemo(
     () => visibleTodos.filter((todo) => todo.completed).length,
@@ -137,5 +166,14 @@ export function useTodos(workspace: WorkspaceSelection) {
     handleRemoveTodo,
     visibleTodos,
     completedCount,
+    priorityFilter,
+    setPriorityFilter,
+    statusFilter,
+    setStatusFilter,
+    assigneeFilter,
+    setAssigneeFilter,
+    dueFilter,
+    setDueFilter,
   }
 }
+export default useTodos;

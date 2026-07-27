@@ -57,3 +57,6 @@ powershell.cmd
 
 # Custom Prisma client build output
 backend/prisma/client/
+
+# Uploads directory
+backend/uploads/

@@ -4,6 +4,9 @@ import prisma from '../database/client';
 import { AppError } from '../middleware/errorHandler';
 
 const SALT_ROUNDS = 10;
+if (process.env.NODE_ENV === 'production' && (!process.env.JWT_SECRET || process.env.JWT_SECRET === 'super-secret-key-1234-change-this-in-production')) {
+  throw new Error('CRITICAL: JWT_SECRET must be securely set in production mode.');
+}
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key-1234-change-this-in-production';
 
 export class AuthService {
