@@ -52,14 +52,12 @@ app.use('/api/auth', authRouter);
 app.use('/api/todos', todoRouter);
 app.use('/api/tasks', todoRouter);
 app.use('/tasks', todoRouter);
-app.use('/api', todoRouter); // Handles /api/comments/* and /api/attachments/*
 
 app.use('/api/profile', profileRouter);
 app.use('/profile', profileRouter);
 
 app.use('/api/account', accountRouter);
 app.use('/account', accountRouter);
-app.use('/api', accountRouter); // Handles /api/change-password
 
 app.use('/api/teams', chatRouter);
 app.use('/teams', chatRouter);
@@ -71,6 +69,13 @@ app.use('/invites', inviteRouter);
 
 app.use('/api/notifications', notificationRouter);
 app.use('/api/activity', activityRouter);
+
+// NOTE: these bare '/api' mounts MUST come last. todoRouter and accountRouter
+// both have wildcard/root-level routes (e.g. GET /:id, POST /change-password)
+// that would otherwise intercept single-segment paths like /api/teams,
+// /api/profile, /api/activity before the real routers above ever see them.
+app.use('/api', todoRouter); // Handles /api/comments/* and /api/attachments/*
+app.use('/api', accountRouter); // Handles /api/change-password
 
 // Catch-all for undefined routes
 app.use((req: Request, res: Response) => {

@@ -1,8 +1,9 @@
-import { type FormEvent } from 'react'
+import { type FormEvent, useState } from 'react'
 import type { Team, TeamRole } from '../../types'
 import { Card } from '../shared/Card'
 import { Button } from '../shared/Button'
 import { Input } from '../shared/Input'
+import { Modal } from '../shared/Modal'
 
 interface TeamSettingsProps {
   selectedTeam: Team
@@ -27,6 +28,22 @@ export function TeamSettings({
 }: TeamSettingsProps) {
   const canRename = canPerformAction(currentRole, 'rename')
   const canDelete = canPerformAction(currentRole, 'delete')
+  const [isConfirmOpen, setIsConfirmOpen] = useState(false)
+  const [confirmText, setConfirmText] = useState('')
+  const expectedName = _selectedTeam?.name ?? ''
+  const isConfirmMatch = confirmText.trim() === expectedName
+
+  const handleConfirmDelete = () => {
+    if (!isConfirmMatch) return
+    onDeleteTeam()
+    setIsConfirmOpen(false)
+    setConfirmText('')
+  }
+
+  const closeModal = () => {
+    setIsConfirmOpen(false)
+    setConfirmText('')
+  }
 
   return (
     <div className="workspace-settings-tab animated-fade-in">
@@ -61,13 +78,48 @@ export function TeamSettings({
             type="button"
             variant="danger"
             disabled={isDeletingTeam || !canDelete}
-            onClick={onDeleteTeam}
+            onClick={() => setIsConfirmOpen(true)}
             className="w-max"
           >
             {isDeletingTeam ? 'Deleting Workspace…' : 'Delete Team Workspace'}
           </Button>
         </div>
       </Card>
+
+      <Modal
+        isOpen={isConfirmOpen}
+        onClose={closeModal}
+        title="Delete Team Workspace"
+        size="sm"
+        footer={
+          <>
+            <Button type="button" variant="secondary" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="danger"
+              disabled={!isConfirmMatch || isDeletingTeam}
+              onClick={handleConfirmDelete}
+            >
+              {isDeletingTeam ? 'Deleting…' : 'Delete Permanently'}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-xs text-secondary mb-3">
+          This will permanently delete <strong>{expectedName}</strong> along with all of its tasks,
+          discussion messages, files, and member records. This action cannot be undone.
+        </p>
+        <Input
+          id="confirmTeamName"
+          label={`Type "${expectedName}" to confirm`}
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          placeholder={expectedName}
+          autoFocus
+        />
+      </Modal>
     </div>
   )
 }

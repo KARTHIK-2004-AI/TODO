@@ -161,23 +161,23 @@ export function TeamCalendar({ selectedTeam, todosProps, onSelectTodo, onAddTask
     <div className="team-calendar-wrapper animated-fade-in">
       <Card className="calendar-card">
         {/* Header navigation bar */}
-        <div className="calendar-header flex justify-between items-center pb-4 border-b border-divider">
+        <div className="calendar-header">
           <div className="calendar-title-group">
             <h2 className="text-lg font-bold text-foreground">
               {monthNames[currentMonth]} {currentYear}
             </h2>
-            <p className="text-xs text-secondary mt-1">
+            <p className="text-xs text-secondary">
               Workspace schedules and timelines for {selectedTeam ? selectedTeam.name : 'Personal Workspace'}
             </p>
           </div>
-          <div className="calendar-actions flex items-center gap-2">
-            <button type="button" className="btn-secondary text-xs px-3 py-1.5 rounded-lg" onClick={handleToday}>
+          <div className="calendar-actions">
+            <button type="button" className="calendar-today-btn" onClick={handleToday}>
               Today
             </button>
-            <div className="btn-group flex bg-surface p-0.5 rounded-xl border border-divider">
+            <div className="calendar-btn-group">
               <button
                 type="button"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-secondary hover:text-foreground"
+                className="calendar-nav-btn"
                 onClick={handlePrevMonth}
                 title="Previous Month"
               >
@@ -185,7 +185,7 @@ export function TeamCalendar({ selectedTeam, todosProps, onSelectTodo, onAddTask
               </button>
               <button
                 type="button"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-secondary hover:text-foreground"
+                className="calendar-nav-btn"
                 onClick={handleNextMonth}
                 title="Next Month"
               >
@@ -202,16 +202,14 @@ export function TeamCalendar({ selectedTeam, todosProps, onSelectTodo, onAddTask
         ) : (
           <div className="calendar-grid-container mt-4">
             {/* Weekday labels */}
-            <div className="grid grid-cols-7 text-center border-b border-divider/50 pb-2 mb-1">
+            <div className="calendar-weekday-row">
               {daysOfWeek.map((day) => (
-                <div key={day} className="text-xs font-bold text-secondary uppercase tracking-wider">
-                  {day}
-                </div>
+                <span key={day}>{day}</span>
               ))}
             </div>
 
             {/* Calendar days grid */}
-            <div className="calendar-grid grid grid-cols-7 gap-px bg-divider/30 border border-divider/50 rounded-xl overflow-hidden">
+            <div className="calendar-grid">
               {calendarDays.map(({ date, isToday, isCurrentMonth }, idx) => {
                 if (!date) return <div key={idx} className="day-cell empty"></div>
 
