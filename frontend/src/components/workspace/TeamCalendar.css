@@ -1,0 +1,158 @@
+.team-calendar-wrapper {
+  width: 100%;
+}
+
+.calendar-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+}
+
+.calendar-header {
+  margin-bottom: 16px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  background-color: var(--border);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  gap: 1px;
+}
+
+.day-cell {
+  position: relative;
+  background-color: var(--bg-card);
+  min-height: 110px;
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.day-cell.current-month {
+  background-color: var(--bg-card);
+}
+
+.day-cell.other-month {
+  background-color: rgba(var(--border), 0.15);
+  opacity: 0.55;
+}
+
+.day-cell:hover {
+  background-color: var(--bg-hover);
+  box-shadow: inset 0 0 0 1px var(--accent);
+  z-index: 2;
+}
+
+.day-cell.today {
+  background-color: var(--accent-light);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.day-number {
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.day-todo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex-grow: 1;
+  max-height: 72px;
+  overflow-y: auto;
+}
+
+.todo-calendar-badge {
+  display: block;
+  width: 100%;
+  border: none;
+  outline: none;
+  font-size: 0.65rem;
+  padding: 3px 6px;
+  border-radius: 4px;
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.todo-calendar-badge:hover {
+  transform: translateY(-1px);
+  filter: brightness(0.95);
+}
+
+.todo-calendar-badge.completed {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+/* Priority Styling (adapted nicely for dark and light modes) */
+.priority-urgent {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  border-left: 2px solid var(--danger);
+}
+
+.priority-high {
+  background-color: var(--warning-light);
+  color: var(--warning);
+  border-left: 2px solid var(--warning);
+}
+
+.priority-medium {
+  background-color: var(--accent-light);
+  color: var(--accent);
+  border-left: 2px solid var(--accent);
+}
+
+.priority-low {
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  border-left: 2px solid var(--text-muted);
+}
+
+/* Quick Add plan hover button */
+.day-add-btn {
+  position: absolute;
+  bottom: 6px;
+  right: 6px;
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-full);
+  background-color: var(--accent);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: var(--shadow-sm);
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+
+.day-cell:hover .day-add-btn {
+  opacity: 1;
+}
+
+.day-add-btn:hover {
+  background-color: var(--accent-hover);
+  transform: scale(1.1);
+}

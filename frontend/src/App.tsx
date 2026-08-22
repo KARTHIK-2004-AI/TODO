@@ -1,17 +1,26 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/preserve-manual-memoization */
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import { getProfile, fetchAccountSettings } from './api'
 import type { AccountSettings, InviteRoute, ProfileData, TeamRole } from './types'
-import { Layout } from './components/Layout'
+import { Layout } from './components/layouts/Layout'
 import { Login } from './pages/Login'
 import { Dashboard } from './pages/Dashboard'
 import { Account } from './pages/Account'
 import { AcceptInvite } from './pages/AcceptInvite'
 import { ActivityTimeline } from './pages/ActivityTimeline'
+import { TeamCalendar } from './components/workspace/TeamCalendar'
+import { TeamChat } from './components/chat/TeamChat'
+import { TeamMembers } from './components/workspace/TeamMembers'
+import { TeamInvites } from './components/workspace/TeamInvites'
+import { SharedFiles } from './components/files/SharedFiles'
+import { TeamAnalytics } from './components/workspace/TeamAnalytics'
+import { TeamSettings } from './components/workspace/TeamSettings'
+import { NotificationCenter as NotificationPage } from './components/notifications/NotificationCenter'
 import { useAuth } from './hooks/useAuth'
 import { useTodos } from './hooks/useTodos'
 import { useTeams } from './hooks/useTeams'
+import { useWebSocket } from './hooks/useWebSocket'
 
 function getRoleLabel(role: TeamRole) {
   return role === 'OWNER' ? 'Owner' : role === 'ADMIN' ? 'Admin' : 'Member'
@@ -48,11 +57,18 @@ function applyTheme(theme: AccountSettings['theme']) {
 }
 
 function App() {
-  const [activeView, setActiveView] = useState<'tasks' | 'account' | 'activity'>('tasks')
+  const [activeView, setActiveView] = useState<'tasks' | 'account' | 'activity' | 'calendar' | 'chat' | 'members' | 'files' | 'reports' | 'settings' | 'notifications'>('tasks')
   const [route, setRoute] = useState<InviteRoute>({ kind: 'tasks' })
   const [workspace, setWorkspace] = useState<{ kind: 'private' } | { kind: 'team'; teamId: string }>({
     kind: 'private',
   })
+
+  const token = localStorage.getItem('authToken')
+  const { status: wsStatus, sendTypingStatus, sendTaskDrawerState } = useWebSocket(
+    token,
+    workspace.kind === 'team' ? workspace.teamId : null,
+    workspace.kind
+  )
 
   // Hook 1: Auth State & Session Actions
   const {
@@ -106,6 +122,8 @@ function App() {
 
   // Hook 3: Teams
   const {
+    selectedTeam,
+    currentRole,
     teams,
     setTeams,
     teamForm,
@@ -132,23 +150,9 @@ function App() {
     handleRevokeInvite,
     handleRemoveMember,
     handleAcceptInvite,
+    handleUpdateMemberRole,
   } = useTeams(workspace, setWorkspace, user, canPerformAction)
 
-  // Memoized Team context helpers
-  const selectedTeam = useMemo(() => {
-    if (workspace.kind === 'team') {
-      return teams.find((team) => team.id === workspace.teamId) ?? null
-    }
-    return null
-  }, [workspace, teams])
-
-  const currentRole = useMemo(() => {
-    if (!user || !selectedTeam) return undefined
-    return (
-      (selectedTeam.members ?? []).find((member) => member.userId === user.id)?.role ??
-      selectedTeam.myRole
-    )
-  }, [selectedTeam, user])
 
   // Account settings panel local state
   const [profile, setProfile] = useState<ProfileData | null>(null)
@@ -206,15 +210,44 @@ function App() {
     const syncRoute = () => {
       const hash = window.location.hash.replace(/^#/, '')
       const [path, queryStr = ''] = hash.split('?')
+      const params = new URLSearchParams(queryStr)
       if (path === '/accept-invite') {
-        const params = new URLSearchParams(queryStr)
         const token = params.get('token') ?? ''
         setRoute({ kind: 'accept-invite', token: token || undefined })
         setAcceptToken(token)
         setActiveView('tasks')
+      } else if (path === '/verify') {
+        const token = params.get('token') ?? ''
+        setRoute({ kind: 'verify', token: token || undefined })
+        setActiveView('tasks')
+      } else if (path === '/reset-password') {
+        const token = params.get('token') ?? ''
+        setRoute({ kind: 'reset-password', token: token || undefined })
+        setActiveView('tasks')
       } else if (path === '/activity') {
         setRoute({ kind: 'tasks' })
         setActiveView('activity')
+      } else if (path === '/calendar') {
+        setRoute({ kind: 'tasks' })
+        setActiveView('calendar')
+      } else if (path === '/chat') {
+        setRoute({ kind: 'tasks' })
+        setActiveView('chat')
+      } else if (path === '/members') {
+        setRoute({ kind: 'tasks' })
+        setActiveView('members')
+      } else if (path === '/files') {
+        setRoute({ kind: 'tasks' })
+        setActiveView('files')
+      } else if (path === '/reports') {
+        setRoute({ kind: 'tasks' })
+        setActiveView('reports')
+      } else if (path === '/settings') {
+        setRoute({ kind: 'tasks' })
+        setActiveView('settings')
+      } else if (path === '/notifications') {
+        setRoute({ kind: 'tasks' })
+        setActiveView('notifications')
       } else {
         setRoute({ kind: path === '/account' ? 'account' : 'tasks' })
         setActiveView(path === '/account' ? 'account' : 'tasks')
@@ -225,14 +258,44 @@ function App() {
     return () => window.removeEventListener('hashchange', syncRoute)
   }, [setAcceptToken])
 
+  const [chatUnreadCounts, setChatUnreadCounts] = useState<Record<string, number>>({})
+
+  const loadUnreadCounts = useCallback(async () => {
+    if (!localStorage.getItem('authToken')) return
+    try {
+      const { fetchChatUnreadCounts } = await import('./api')
+      const counts = await fetchChatUnreadCounts()
+      const mapping: Record<string, number> = {}
+      counts.forEach((c) => {
+        mapping[c.teamId] = c.count
+      })
+      setChatUnreadCounts(mapping)
+    } catch {}
+  }, [])
+
+  // Reload chat counts on incoming websocket messages
+  useEffect(() => {
+    const handleWsEvent = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const msg = customEvent.detail
+      if (!msg) return
+      if (msg.eventType === 'CHAT_MESSAGE_CREATED' || msg.eventType === 'CHAT_READ') {
+        void loadUnreadCounts()
+      }
+    }
+    window.addEventListener('ws:event', handleWsEvent)
+    return () => window.removeEventListener('ws:event', handleWsEvent)
+  }, [loadUnreadCounts])
+
   // Trigger loads on sign in
   useEffect(() => {
     if (user) {
       void loadTodos()
       void loadTeams()
       void loadAccountData()
+      void loadUnreadCounts()
     }
-  }, [user, loadTodos, loadTeams, loadAccountData])
+  }, [user, loadTodos, loadTeams, loadAccountData, loadUnreadCounts])
 
   // Listen to workspace changes from notifications click-through
   useEffect(() => {
@@ -259,8 +322,8 @@ function App() {
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized)
   }, [setUser, setTodos, setStatusMessage])
 
-  // Reload team settings when workspace active team changes
-  useEffect(() => {
+  // Reload team settings when workspace active team changes or WebSocket update notifies changes
+  const reloadActiveTeamDetails = useCallback(() => {
     if (workspace.kind === 'team') {
       import('./api')
         .then(({ fetchTeamDetails }) => fetchTeamDetails(workspace.teamId))
@@ -273,6 +336,7 @@ function App() {
                     ...fullTeam,
                     members: fullTeam.members ?? t.members ?? [],
                     invites: fullTeam.invites ?? t.invites ?? [],
+                    stats: fullTeam.stats ?? t.stats,
                   }
                 : t
             )
@@ -282,7 +346,40 @@ function App() {
     }
   }, [workspace, setTeams])
 
-  const handleViewChange = (view: 'tasks' | 'account' | 'activity') => {
+  useEffect(() => {
+    reloadActiveTeamDetails()
+  }, [workspace, reloadActiveTeamDetails])
+
+  // Real-time team presence & statistics synchronization
+  useEffect(() => {
+    const handleWsEvent = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const wsMessage = customEvent.detail
+      if (!wsMessage || !wsMessage.eventType) return
+
+      const { eventType, workspaceId } = wsMessage
+
+      if (
+        eventType === 'PRESENCE_UPDATED' ||
+        eventType === 'MEMBER_JOINED' ||
+        eventType === 'MEMBER_LEFT' ||
+        eventType === 'WORKSPACE_UPDATED' ||
+        eventType === 'TASK_CREATED' ||
+        eventType === 'TASK_UPDATED' ||
+        eventType === 'TASK_DELETED'
+      ) {
+        void loadTeams()
+        if (workspace.kind === 'team' && (workspaceId === workspace.teamId || eventType === 'PRESENCE_UPDATED')) {
+          reloadActiveTeamDetails()
+        }
+      }
+    }
+
+    window.addEventListener('ws:event', handleWsEvent)
+    return () => window.removeEventListener('ws:event', handleWsEvent)
+  }, [workspace, loadTeams, reloadActiveTeamDetails])
+
+  const handleViewChange = (view: any) => {
     setActiveView(view)
     window.location.hash = view === 'account' ? '#/account' : view === 'activity' ? '#/activity' : '#/tasks'
   }
@@ -293,6 +390,18 @@ function App() {
       activeView={route.kind === 'accept-invite' ? 'accept-invite' : activeView}
       onViewChange={handleViewChange}
       onLogout={handleLogout}
+      wsStatus={wsStatus}
+      workspace={workspace}
+      setWorkspace={setWorkspace}
+      teams={teams}
+      chatUnreadCounts={chatUnreadCounts}
+      query={query}
+      setQuery={setQuery}
+      teamForm={teamForm}
+      setTeamForm={setTeamForm}
+      onCreateTeam={handleCreateTeam}
+      teamError={teamError}
+      teamMessage={teamMessage}
     >
       {!user ? (
         <Login
@@ -306,6 +415,8 @@ function App() {
           onLogin={handleLogin}
           onRegister={handleRegister}
           onSuccess={() => setActiveView('tasks')}
+          route={route}
+          setRoute={setRoute}
         />
       ) : route.kind === 'accept-invite' ? (
         <AcceptInvite
@@ -349,6 +460,108 @@ function App() {
         />
       ) : activeView === 'activity' ? (
         <ActivityTimeline />
+      ) : activeView === 'calendar' ? (
+        <div className="page-view-wrapper">
+          <TeamCalendar
+            selectedTeam={selectedTeam}
+            todosProps={visibleTodos}
+            onSelectTodo={(id) => {
+              window.location.hash = `#/tasks`
+              // slight delay to let tasks page mount, then open drawer
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open:task', { detail: id })), 100)
+            }}
+            onAddTaskOnDate={() => { window.location.hash = '#/tasks' }}
+          />
+        </div>
+      ) : activeView === 'chat' && selectedTeam && user ? (
+        <div className="page-view-wrapper">
+          <TeamChat
+            teamId={selectedTeam.id}
+            currentUser={user}
+            teamMembers={selectedTeam.members || []}
+          />
+        </div>
+      ) : activeView === 'members' && selectedTeam ? (
+        <div className="page-view-wrapper">
+          <TeamMembers
+            selectedTeam={selectedTeam}
+            currentRole={currentRole}
+            user={user!}
+            onRemoveMember={(member) => { if (selectedTeam) void handleRemoveMember(selectedTeam, member) }}
+            isRemovingMemberId={pendingRemoveMemberId}
+            onUpdateMemberRole={(userId, role) => { if (selectedTeam) void handleUpdateMemberRole(selectedTeam, userId, role) }}
+            canPerformAction={canPerformAction}
+            getRoleLabel={getRoleLabel}
+            todos={visibleTodos}
+          />
+          <TeamInvites
+            selectedTeam={selectedTeam}
+            currentRole={currentRole}
+            inviteEmail={inviteEmail}
+            onChangeInviteEmail={setInviteEmail}
+            onInviteMember={(e) => { e.preventDefault(); if (selectedTeam) void handleInviteMember(selectedTeam) }}
+            onRevokeInvite={(inviteId) => { if (selectedTeam) void handleRevokeInvite(selectedTeam, inviteId) }}
+            isRevokingInviteId={pendingRevokeInviteId}
+            onInviteAgain={(email) => { if (selectedTeam) void handleInviteAgain(selectedTeam, email) }}
+            canPerformAction={canPerformAction}
+          />
+        </div>
+      ) : activeView === 'files' ? (
+        <div className="page-view-wrapper">
+          <SharedFiles
+            attachments={(visibleTodos.flatMap((t) => (t.attachments || []).map((a) => ({ ...a, taskTitle: t.title, taskId: t.id }))))}
+            onReload={loadTodos}
+          />
+        </div>
+      ) : activeView === 'reports' && selectedTeam ? (
+        <div className="page-view-wrapper">
+          <TeamAnalytics selectedTeam={selectedTeam} todos={visibleTodos} />
+        </div>
+      ) : activeView === 'settings' ? (
+        <div className="page-view-wrapper">
+          {selectedTeam ? (
+            <TeamSettings
+              selectedTeam={selectedTeam}
+              currentRole={currentRole}
+              teamNameEdit={teamNameEdit}
+              onChangeTeamNameEdit={setTeamNameEdit}
+              onRenameTeam={(e) => { e.preventDefault(); if (selectedTeam) void handleRenameTeam(selectedTeam) }}
+              onDeleteTeam={() => { if (selectedTeam) void handleDeleteTeam(selectedTeam) }}
+              isDeletingTeam={pendingDeleteTeam}
+              canPerformAction={canPerformAction}
+            />
+          ) : (
+            <Account
+              user={user!}
+              setUser={setUser}
+              onLogout={handleLogout}
+              profile={profile}
+              setProfile={setProfile}
+              profileForm={profileForm}
+              setProfileForm={setProfileForm}
+              settingsForm={settingsForm}
+              setSettingsForm={setSettingsForm}
+              passwordForm={passwordForm}
+              setPasswordForm={setPasswordForm}
+              accountError={accountError}
+              setAccountError={setAccountError}
+              accountMessage={accountMessage}
+              setAccountMessage={setAccountMessage}
+              accountSyncLoading={accountSyncLoading}
+              saveProfileLoading={saveProfileLoading}
+              setSaveProfileLoading={setSaveProfileLoading}
+              saveSettingsLoading={saveSettingsLoading}
+              setSaveSettingsLoading={setSaveSettingsLoading}
+              changePasswordLoading={changePasswordLoading}
+              setChangePasswordLoading={setChangePasswordLoading}
+              applyTheme={applyTheme}
+            />
+          )}
+        </div>
+      ) : activeView === 'notifications' ? (
+        <div className="page-view-wrapper">
+          <NotificationPage />
+        </div>
       ) : (
         <Dashboard
           user={user}
@@ -399,6 +612,9 @@ function App() {
           onRemoveMember={(member) => {
             if (selectedTeam) void handleRemoveMember(selectedTeam, member)
           }}
+          onUpdateMemberRole={(userId, role) => {
+            if (selectedTeam) void handleUpdateMemberRole(selectedTeam, userId, role)
+          }}
           pendingRemoveMemberId={pendingRemoveMemberId}
           pendingDeleteTodoId={pendingDeleteTodoId}
           onToggleTodo={handleToggleTodo}
@@ -418,6 +634,10 @@ function App() {
           dueFilter={dueFilter}
           setDueFilter={setDueFilter}
           onReloadTodos={loadTodos}
+          wsStatus={wsStatus}
+          sendTypingStatus={sendTypingStatus}
+          sendTaskDrawerState={sendTaskDrawerState}
+          chatUnreadCounts={chatUnreadCounts}
         />
       )}
     </Layout>

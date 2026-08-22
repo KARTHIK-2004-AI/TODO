@@ -8,6 +8,8 @@ export interface User {
   email: string
   name: string
   avatarUrl?: string
+  isOnline?: boolean
+  lastSeen?: string | null
 }
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'
@@ -21,6 +23,12 @@ export interface TaskComment {
   createdAt: string
   updatedAt: string
   user: User
+  readStatuses?: Array<{
+    commentId: string
+    userId: string
+    viewedAt: string
+    user: { id: string; name: string }
+  }>
 }
 
 export interface TaskAttachment {
@@ -33,6 +41,7 @@ export interface TaskAttachment {
   storagePath: string
   createdAt: string
   uploader: User
+  isImportant?: boolean
 }
 
 export interface TaskHistory {
@@ -64,6 +73,7 @@ export interface Todo {
   comments?: TaskComment[]
   attachments?: TaskAttachment[]
   histories?: TaskHistory[]
+  archived?: boolean
   createdAt: string
   updatedAt: string
 }
@@ -119,6 +129,13 @@ export interface Team {
   myRole?: TeamRole
   joinedAt?: string
   memberCount?: number
+  stats?: {
+    memberCount: number
+    onlineMemberCount: number
+    totalTasks: number
+    completedTasks: number
+    pendingTasks: number
+  }
 }
 
 export interface LoginResponse {
@@ -192,3 +209,5 @@ export type InviteRoute =
   | { kind: 'tasks' }
   | { kind: 'account' }
   | { kind: 'accept-invite'; token?: string }
+  | { kind: 'verify'; token?: string }
+  | { kind: 'reset-password'; token?: string }

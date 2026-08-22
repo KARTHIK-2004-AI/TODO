@@ -2,82 +2,14 @@
 import { useEffect, useState } from 'react'
 import { fetchActivity, fetchTeamActivity, fetchMyTeams } from '../api'
 import type { ActivityLog, Team } from '../types'
+import { getActivityIcon, getActivityText } from '../utils/task'
+import { formatTimestamp } from '../utils/time'
 
-function formatTimestamp(isoString: string): string {
-  const date = new Date(isoString)
-  const now = new Date()
-  const diffMs = now.getTime() - date.getTime()
-  const diffMins = Math.floor(diffMs / 60000)
-  const diffHours = Math.floor(diffMs / 3600000)
-  const diffDays = Math.floor(diffHours / 24)
 
-  if (diffMins < 1) return 'Just now'
-  if (diffMins < 60) return `${diffMins}m ago`
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays < 7) return `${diffDays}d ago`
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
-function getActivityIcon(action: string): string {
-  switch (action) {
-    case 'TODO_CREATE': return '📝'
-    case 'TODO_COMPLETE': return '✅'
-    case 'TODO_UPDATE': return '✏️'
-    case 'TODO_DELETE': return '🗑️'
-    case 'TEAM_CREATE': return '👥'
-    case 'TEAM_RENAME': return '🏷️'
-    case 'TEAM_DELETE': return '❌'
-    case 'TEAM_INVITE': return '✉️'
-    case 'TEAM_ACCEPT_INVITE': return '👋'
-    case 'TEAM_REMOVE_MEMBER': return '🚪'
-    case 'TEAM_CHANGE_ROLE': return '🛡️'
-    default: return '🔔'
-  }
-}
-
-function getActivityText(log: ActivityLog): string {
-  const userName = log.user?.name || 'Someone'
-  const meta = log.metadata || {}
-  const target = meta.title || meta.name || meta.targetName || meta.email || ''
-  const team = meta.teamName ? `team "${meta.teamName}"` : ''
-
-  switch (log.action) {
-    case 'TODO_CREATE':
-      return `${userName} created task "${target}" ${team ? `in ${team}` : '(private)'}`
-    case 'TODO_COMPLETE':
-      return `${userName} completed task "${target}" ${team ? `in ${team}` : '(private)'}`
-    case 'TODO_UPDATE':
-      return `${userName} updated task "${target}" ${team ? `in ${team}` : '(private)'}`
-    case 'TODO_DELETE':
-      return `${userName} deleted task "${target}" ${team ? `in ${team}` : '(private)'}`
-    case 'TEAM_CREATE':
-      return `${userName} created team "${target}"`
-    case 'TEAM_RENAME':
-      return `${userName} renamed team "${meta.oldName}" to "${meta.newName}"`
-    case 'TEAM_DELETE':
-      return `${userName} deleted team "${target}"`
-    case 'TEAM_INVITE':
-      return `${userName} invited ${target} to join team "${meta.teamName}"`
-    case 'TEAM_ACCEPT_INVITE':
-      return `${userName} joined team "${meta.teamName}"`
-    case 'TEAM_REMOVE_MEMBER':
-      return `${userName} removed ${target} from team "${meta.teamName}"`
-    case 'TEAM_CHANGE_ROLE':
-      return `${userName} changed role of ${target} to ${meta.newRole} in team "${meta.teamName}"`
-    default:
-      return `${userName} performed action ${log.action} on ${log.entityType}`
-  }
-}
-
-export function ActivityTimeline() {
+export function ActivityTimeline({ workspaceId }: { workspaceId?: string }) {
   const [logs, setLogs] = useState<ActivityLog[]>([])
   const [teams, setTeams] = useState<Team[]>([])
-  const [selectedTeamId, setSelectedTeamId] = useState<string>('all')
+  const [selectedTeamId, setSelectedTeamId] = useState<string>(workspaceId || 'all')
   const [filterType, setFilterType] = useState<string>('')
   const [page, setPage] = useState<number>(1)
   const [totalPages, setTotalPages] = useState<number>(1)
@@ -121,6 +53,14 @@ export function ActivityTimeline() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTeamId, filterType, page])
 
+  // Sync selectedTeamId if workspaceId prop shifts
+  useEffect(() => {
+    if (workspaceId) {
+      setSelectedTeamId(workspaceId)
+      setPage(1)
+    }
+  }, [workspaceId])
+
   const handleScopeChange = (scope: string) => {
     setSelectedTeamId(scope)
     setPage(1)
@@ -139,21 +79,23 @@ export function ActivityTimeline() {
       </div>
 
       <div className="timeline-filters-bar">
-        <div className="filter-group-item">
-          <label htmlFor="workspace-select">Workspace</label>
-          <select
-            id="workspace-select"
-            value={selectedTeamId}
-            onChange={(e) => handleScopeChange(e.target.value)}
-          >
-            <option value="all">All Workspaces (Unified)</option>
-            {teams.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name} (Team)
-              </option>
-            ))}
-          </select>
-        </div>
+        {!workspaceId && (
+          <div className="filter-group-item">
+            <label htmlFor="workspace-select">Workspace</label>
+            <select
+              id="workspace-select"
+              value={selectedTeamId}
+              onChange={(e) => handleScopeChange(e.target.value)}
+            >
+              <option value="all">All Workspaces (Unified)</option>
+              {teams.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name} (Team)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div className="filter-group-item">
           <label htmlFor="category-select">Category</label>

@@ -28,7 +28,7 @@ describe('Login Component', () => {
 
     expect(screen.getByLabelText(/Email/i)).toBeInTheDocument()
     expect(screen.getByLabelText(/Password/i)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Log in/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Sign In/i })).toBeInTheDocument()
   })
 
   it('renders register fields when authMode is register', () => {

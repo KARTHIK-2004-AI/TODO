@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import prisma from '../database/client';
 import { Role, InviteStatus } from '../prisma/client';
 import { AppError } from '../middleware/errorHandler';
-import { eventEmitter } from './eventService';
+import { eventEmitter } from './eventEmitter';
 
 export class InviteService {
   /**

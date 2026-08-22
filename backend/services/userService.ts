@@ -51,13 +51,39 @@ export class UserService {
       throw new AppError('User not found', 404);
     }
 
+    let finalAvatarUrl = data.avatarUrl;
+    if (data.avatarUrl && data.avatarUrl.startsWith('data:image/')) {
+      const fs = require('fs');
+      const path = require('path');
+      const crypto = require('crypto');
+      
+      const matches = data.avatarUrl.match(/^data:image\/([A-Za-z0-9\-+]+);base64,(.+)$/);
+      if (matches && matches.length === 3) {
+        const ext = matches[1];
+        const base64Data = matches[2];
+        const buffer = Buffer.from(base64Data, 'base64');
+        
+        const UPLOADS_ROOT = path.resolve(__dirname, '..', 'uploads');
+        if (!fs.existsSync(UPLOADS_ROOT)) {
+          fs.mkdirSync(UPLOADS_ROOT, { recursive: true });
+        }
+        
+        const uniqueId = crypto.randomUUID();
+        const fileName = `avatar_${userId}_${uniqueId}.${ext}`;
+        const absolutePath = path.resolve(UPLOADS_ROOT, fileName);
+        
+        fs.writeFileSync(absolutePath, buffer);
+        finalAvatarUrl = `/api/uploads/${fileName}`;
+      }
+    }
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.bio !== undefined && { bio: data.bio }),
         ...(data.phoneNumber !== undefined && { phoneNumber: data.phoneNumber }),
-        ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl }),
+        ...(data.avatarUrl !== undefined && { avatarUrl: finalAvatarUrl }),
         ...(data.timezone !== undefined && { timezone: data.timezone }),
       },
       select: {

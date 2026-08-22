@@ -13,7 +13,11 @@ const updateProfileSchema = z.object({
   name: z.string().min(1, 'Name cannot be empty').optional(),
   bio: z.string().optional(),
   phoneNumber: z.string().optional(),
-  avatarUrl: z.union([z.string().url('Invalid avatar URL format'), z.string().length(0)]).optional(),
+  avatarUrl: z.union([
+    z.string().url('Invalid avatar URL format'),
+    z.string().startsWith('data:image/'),
+    z.string().length(0)
+  ]).optional(),
   timezone: z.string().optional(),
 });
 

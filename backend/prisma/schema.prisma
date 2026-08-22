@@ -39,10 +39,16 @@ model User {
   sentInvites     TeamInvite[]
   notifications   Notification[]
   activityLogs    ActivityLog[]
-  comments        TaskComment[]
-  attachments     TaskAttachment[]
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  comments            TaskComment[]
+  attachments         TaskAttachment[]
+  commentReadStatuses CommentReadStatus[]
+  chatMessages        ChatMessage[]
+  isVerified          Boolean      @default(false)
+  verificationToken   String?
+  resetPasswordToken  String?
+  lastSeen            DateTime?
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @updatedAt
 }
 
 model Team {
@@ -57,16 +63,18 @@ model Team {
   invites      TeamInvite[]
   todos        Todo[]
   activityLogs ActivityLog[]
+  chatMessages ChatMessage[]
 }
 
 model TeamMember {
-  id       String   @id @default(uuid())
-  teamId   String
-  team     Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
-  userId   String
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  role     Role     @default(MEMBER)
-  joinedAt DateTime @default(now())
+  id               String   @id @default(uuid())
+  teamId           String
+  team             Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role             Role     @default(MEMBER)
+  joinedAt         DateTime @default(now())
+  lastReadChatTime DateTime @default(now())
 
   @@unique([teamId, userId])
 }
@@ -104,19 +112,21 @@ model Todo {
   comments         TaskComment[]
   attachments      TaskAttachment[]
   histories        TaskHistory[]
+  archived         Boolean          @default(false)
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
 }
 
 model TaskComment {
-  id        String   @id @default(uuid())
-  taskId    String
-  task      Todo     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  message   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String              @id @default(uuid())
+  taskId       String
+  task         Todo                @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  userId       String
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message      String              @db.Text
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  readStatuses CommentReadStatus[]
 }
 
 model TaskAttachment {
@@ -129,6 +139,7 @@ model TaskAttachment {
   fileType         String
   fileSize         Int
   storagePath      String
+  isImportant      Boolean  @default(false)
   createdAt        DateTime @default(now())
 }
 
@@ -180,4 +191,38 @@ model ActivityLog {
   entityId   String
   metadata   Json
   createdAt  DateTime @default(now())
+}
+
+model CommentReadStatus {
+  id        String      @id @default(uuid())
+  commentId String
+  comment   TaskComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewedAt  DateTime    @default(now())
+
+  @@unique([commentId, userId])
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String   @db.Text
+  metadata  Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailQueue {
+  id        String    @id @default(uuid())
+  to        String
+  subject   String
+  html      String    @db.Text
+  status    String    @default("PENDING") // PENDING, SENT, FAILED
+  error     String?   @db.Text
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
 }

@@ -2,7 +2,8 @@ import crypto from 'crypto';
 import prisma from '../database/client';
 import { Role, InviteStatus } from '../prisma/client';
 import { AppError } from '../middleware/errorHandler';
-import { eventEmitter } from './eventService';
+import { eventEmitter } from './eventEmitter';
+import { isUserOnline } from './websocketService';
 
 export class TeamService {
   /**
@@ -58,7 +59,7 @@ export class TeamService {
         members: {
           include: {
             user: {
-              select: { id: true, email: true, name: true, avatarUrl: true },
+              select: { id: true, email: true, name: true, avatarUrl: true, lastSeen: true },
             },
           },
         },
@@ -75,13 +76,47 @@ export class TeamService {
       throw new AppError('Requester is not a member of this team', 403, 'NOT_TEAM_MEMBER');
     }
 
+    // Compute task stats
+    const totalTasks = await prisma.todo.count({ where: { teamId } });
+    const completedTasks = await prisma.todo.count({ where: { teamId, completed: true } });
+    const pendingTasks = totalTasks - completedTasks;
+
+    // Attach online status
+    const membersWithOnline = team.members.map((member) => {
+      const online = isUserOnline(member.userId);
+      return {
+        ...member,
+        user: member.user
+          ? {
+              ...member.user,
+              isOnline: online,
+              lastSeen: online ? null : member.user.lastSeen,
+            }
+          : null,
+      };
+    });
+
+    const onlineMembersCount = membersWithOnline.filter((m) => m.user?.isOnline).length;
+
+    const teamWithPresenceAndStats = {
+      ...team,
+      members: membersWithOnline,
+      stats: {
+        memberCount: team.members.length,
+        onlineMemberCount: onlineMembersCount,
+        totalTasks,
+        completedTasks,
+        pendingTasks,
+      },
+    };
+
     // Hide invites list from regular members if appropriate, or return full details
     if (membership.role === Role.MEMBER) {
-      const { invites, ...teamWithoutInvites } = team;
+      const { invites, ...teamWithoutInvites } = teamWithPresenceAndStats;
       return teamWithoutInvites;
     }
 
-    return team;
+    return teamWithPresenceAndStats;
   }
 
   /**
@@ -96,7 +131,7 @@ export class TeamService {
             members: {
               include: {
                 user: {
-                  select: { id: true, email: true, name: true, avatarUrl: true },
+                  select: { id: true, email: true, name: true, avatarUrl: true, lastSeen: true },
                 },
               },
             },
@@ -110,12 +145,29 @@ export class TeamService {
       orderBy: { joinedAt: 'desc' },
     });
 
-    return memberships.map((m) => ({
-      ...m.team,
-      myRole: m.role,
-      joinedAt: m.joinedAt,
-      memberCount: m.team._count.members,
-    }));
+    return memberships.map((m) => {
+      const membersWithOnline = m.team.members.map((member) => {
+        const online = isUserOnline(member.userId);
+        return {
+          ...member,
+          user: member.user
+            ? {
+                ...member.user,
+                isOnline: online,
+                lastSeen: online ? null : member.user.lastSeen,
+              }
+            : null,
+        };
+      });
+
+      return {
+        ...m.team,
+        members: membersWithOnline,
+        myRole: m.role,
+        joinedAt: m.joinedAt,
+        memberCount: m.team._count.members,
+      };
+    });
   }
 
   /**

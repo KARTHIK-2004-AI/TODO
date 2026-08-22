@@ -117,6 +117,14 @@ describe('Sprint 5 Project Execution Engine Backend Tests', () => {
     const edited = await CollaborationService.updateComment(userA.id, comment.id, 'Updated message');
     expect(edited.message).toBe('Updated message');
 
+    // User B attempts to mark comments as read -> Forbidden
+    await expect(CollaborationService.markCommentsAsRead(userB.id, task.id)).rejects.toThrow('Forbidden');
+
+    // User A marks comments as read -> Allowed
+    const readResult = await CollaborationService.markCommentsAsRead(userA.id, task.id);
+    expect(readResult.message).toBe('Comments marked as read');
+    expect(readResult.commentIds).toContain(comment.id);
+
     // User B attempts to delete comment -> Forbidden
     await expect(CollaborationService.deleteComment(userB.id, comment.id)).rejects.toThrow('You can only delete your own comments');
 

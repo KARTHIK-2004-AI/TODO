@@ -47,4 +47,46 @@ authRouter.post(
   }
 );
 
+authRouter.get('/verify', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const token = req.query.token as string;
+    if (!token) {
+      res.status(400).json({ error: 'Token is required' });
+      return;
+    }
+    const result = await AuthService.verifyEmail(token);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/forgot-password', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      res.status(400).json({ error: 'Email is required' });
+      return;
+    }
+    const result = await AuthService.forgotPassword(email);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+authRouter.post('/reset-password', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      res.status(400).json({ error: 'Token and password are required' });
+      return;
+    }
+    const result = await AuthService.resetPassword(token, password);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default authRouter;

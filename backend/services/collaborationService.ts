@@ -134,11 +134,15 @@ export class CollaborationService {
     return TaskService.deleteComment(userId, commentId);
   }
 
+  static async markCommentsAsRead(userId: string, taskId: string) {
+    return TaskService.markCommentsAsRead(userId, taskId);
+  }
+
   // --- Task Attachments ---
   static async addAttachment(
     userId: string,
     taskId: string,
-    data: { fileName: string; fileType: string; fileSize: number; storagePath: string }
+    data: { fileName: string; fileType: string; fileSize: number; storagePath: string; isImportant?: boolean }
   ) {
     return TaskService.addAttachment(userId, taskId, data);
   }
@@ -149,6 +153,10 @@ export class CollaborationService {
 
   static async deleteAttachment(userId: string, attachmentId: string) {
     return TaskService.deleteAttachment(userId, attachmentId);
+  }
+
+  static async updateAttachment(userId: string, attachmentId: string, isImportant?: boolean) {
+    return TaskService.updateAttachment(userId, attachmentId, isImportant);
   }
 
   // --- Task Assignment ---

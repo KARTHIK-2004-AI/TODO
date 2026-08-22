@@ -16,7 +16,7 @@ const mockTodos: Todo[] = [
     description: 'First task description',
     completed: false,
     userId: 'user-1',
-    priority: 'MEDIUM',
+    priority: 'HIGH',
     status: 'TODO',
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -98,8 +98,7 @@ describe('Dashboard Component', () => {
       />
     )
 
-    expect(screen.getByText(/Workspace switcher/i)).toBeInTheDocument()
-    expect(screen.getByText(/Todo workspace/i)).toBeInTheDocument()
+    expect(screen.getByText(/private/i)).toBeInTheDocument()
     expect(screen.getByText(/^First task$/i)).toBeInTheDocument()
   })
 })

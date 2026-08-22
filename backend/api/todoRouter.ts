@@ -38,6 +38,7 @@ const updateTodoSchema = z.object({
   dueDate: z.string().nullable().optional(),
   startDate: z.string().nullable().optional(),
   estimatedHours: z.number().int().min(0).nullable().optional(),
+  archived: z.boolean().optional(),
 });
 
 const commentSchema = z.object({
@@ -49,6 +50,7 @@ const attachmentSchema = z.object({
   fileType: z.string().min(1, 'FileType is required'),
   fileSize: z.number().int().min(0, 'FileSize must be positive'),
   storagePath: z.string().min(1, 'StoragePath is required'),
+  isImportant: z.boolean().optional(),
 });
 
 const assignSchema = z.object({
@@ -56,120 +58,11 @@ const assignSchema = z.object({
   assignedUserId: z.string().optional(), // compatibility
 });
 
-// GET /api/todos - Fetch tasks
-todoRouter.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-
-    let completed: boolean | undefined = undefined;
-    if (req.query.completed === 'true') {
-      completed = true;
-    } else if (req.query.completed === 'false') {
-      completed = false;
-    }
-
-    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
-    const teamId = typeof req.query.teamId === 'string' ? req.query.teamId : undefined;
-    const priority = typeof req.query.priority === 'string' ? req.query.priority as TaskPriority : undefined;
-    const status = typeof req.query.status === 'string' ? req.query.status as TaskStatus : undefined;
-    const assigneeId = typeof req.query.assigneeId === 'string' ? req.query.assigneeId : undefined;
-
-    const todos = await CollaborationService.getTodos(userId, { completed, search, teamId, priority, status, assigneeId });
-    res.status(200).json(todos);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// POST /api/todos - Create task
-todoRouter.post(
-  '/',
-  validate({ body: createTodoSchema }),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const userId = req.user!.id;
-      const newTodo = await CollaborationService.createTodo(userId, req.body);
-      res.status(201).json(newTodo);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// GET /api/todos/:id - Fetch task details
-todoRouter.get('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const todoId = req.params.id;
-    const todo = await CollaborationService.getTodoById(userId, todoId);
-    res.status(200).json(todo);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// PUT /api/todos/:id - Update task details
-todoRouter.put(
-  '/:id',
-  validate({ body: updateTodoSchema }),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const userId = req.user!.id;
-      const todoId = req.params.id;
-      const updatedTodo = await CollaborationService.updateTodo(userId, todoId, req.body);
-      res.status(200).json(updatedTodo);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// DELETE /api/todos/:id - Delete task
-todoRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const todoId = req.params.id;
-    const result = await CollaborationService.deleteTodo(userId, todoId);
-    res.status(200).json(result);
-  } catch (error) {
-    next(error);
-  }
-});
-
 // ----------------------------------------------------
-// TASK DISCUSSIONS (COMMENTS) ENDPOINTS
+// 1. STANDALONE SUB-RESOURCE ENDPOINTS (MUST PRECEDE /:id)
 // ----------------------------------------------------
 
-// POST /api/todos/:id/comments - Add comment
-todoRouter.post(
-  '/:id/comments',
-  validate({ body: commentSchema }),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const userId = req.user!.id;
-      const taskId = req.params.id;
-      const { message } = req.body;
-      const comment = await CollaborationService.addComment(userId, taskId, message);
-      res.status(201).json(comment);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// GET /api/todos/:id/comments - Get comment list
-todoRouter.get('/:id/comments', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const userId = req.user!.id;
-    const taskId = req.params.id;
-    const comments = await CollaborationService.getComments(userId, taskId);
-    res.status(200).json(comments);
-  } catch (error) {
-    next(error);
-  }
-});
-
-// PUT /api/todos/comments/:commentId (or standalone /api/comments/:commentId)
+// PUT /comments/:commentId - Update comment
 todoRouter.put(
   '/comments/:commentId',
   validate({ body: commentSchema }),
@@ -186,7 +79,7 @@ todoRouter.put(
   }
 );
 
-// DELETE /api/todos/comments/:commentId
+// DELETE /comments/:commentId - Delete comment
 todoRouter.delete('/comments/:commentId', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -198,45 +91,20 @@ todoRouter.delete('/comments/:commentId', async (req: Request, res: Response, ne
   }
 });
 
-// Also register standalone global mounts inside the router for comments
-todoRouter.put('/api/comments/:commentId', validate({ body: commentSchema }), async (req, res, next) => {
-  req.params.commentId = req.params.commentId;
-  next();
-});
-
-// ----------------------------------------------------
-// TASK ATTACHMENTS ENDPOINTS
-// ----------------------------------------------------
-
-// POST /api/todos/:id/attachments - Create attachment metadata
-todoRouter.post(
-  '/:id/attachments',
-  validate({ body: attachmentSchema }),
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const userId = req.user!.id;
-      const taskId = req.params.id;
-      const attachment = await CollaborationService.addAttachment(userId, taskId, req.body);
-      res.status(201).json(attachment);
-    } catch (error) {
-      next(error);
-    }
-  }
-);
-
-// GET /api/todos/:id/attachments - List attachment metadata
-todoRouter.get('/:id/attachments', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+// PUT /attachments/:attachmentId - Update attachment metadata (isImportant) with auth check
+todoRouter.put('/attachments/:attachmentId', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
-    const taskId = req.params.id;
-    const attachments = await CollaborationService.getAttachments(userId, taskId);
-    res.status(200).json(attachments);
+    const { attachmentId } = req.params;
+    const { isImportant } = req.body;
+    const updated = await CollaborationService.updateAttachment(userId, attachmentId, isImportant);
+    res.status(200).json(updated);
   } catch (error) {
     next(error);
   }
 });
 
-// DELETE /api/todos/attachments/:attachmentId
+// DELETE /attachments/:attachmentId - Delete attachment
 todoRouter.delete('/attachments/:attachmentId', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -248,7 +116,7 @@ todoRouter.delete('/attachments/:attachmentId', async (req: Request, res: Respon
   }
 });
 
-// GET /api/todos/attachments/:attachmentId/download
+// GET /attachments/:attachmentId/download - Download attachment
 todoRouter.get('/attachments/:attachmentId/download', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const userId = req.user!.id;
@@ -300,8 +168,121 @@ todoRouter.get('/attachments/:attachmentId/download', async (req: Request, res: 
 });
 
 // ----------------------------------------------------
-// TASK ASSIGNMENT SPECIFIC ENDPOINTS
+// 2. ROOT TASK COLLECTION ENDPOINTS
 // ----------------------------------------------------
+
+// GET /api/todos - Fetch tasks
+todoRouter.get('/', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+
+    let completed: boolean | undefined = undefined;
+    if (req.query.completed === 'true') {
+      completed = true;
+    } else if (req.query.completed === 'false') {
+      completed = false;
+    }
+
+    const search = typeof req.query.search === 'string' ? req.query.search : undefined;
+    const teamId = typeof req.query.teamId === 'string' ? req.query.teamId : undefined;
+    const priority = typeof req.query.priority === 'string' ? req.query.priority as TaskPriority : undefined;
+    const status = typeof req.query.status === 'string' ? req.query.status as TaskStatus : undefined;
+    const assigneeId = typeof req.query.assigneeId === 'string' ? req.query.assigneeId : undefined;
+
+    const todos = await CollaborationService.getTodos(userId, { completed, search, teamId, priority, status, assigneeId });
+    res.status(200).json(todos);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/todos - Create task
+todoRouter.post(
+  '/',
+  validate({ body: createTodoSchema }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const newTodo = await CollaborationService.createTodo(userId, req.body);
+      res.status(201).json(newTodo);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// ----------------------------------------------------
+// 3. TASK SUB-RESOURCE ENDPOINTS
+// ----------------------------------------------------
+
+// POST /api/todos/:id/comments/read - Mark comments read
+todoRouter.post('/:id/comments/read', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const taskId = req.params.id;
+    const result = await CollaborationService.markCommentsAsRead(userId, taskId);
+    res.status(200).json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/todos/:id/comments - Add comment
+todoRouter.post(
+  '/:id/comments',
+  validate({ body: commentSchema }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const taskId = req.params.id;
+      const { message } = req.body;
+      const comment = await CollaborationService.addComment(userId, taskId, message);
+      res.status(201).json(comment);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /api/todos/:id/comments - Get comment list
+todoRouter.get('/:id/comments', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const taskId = req.params.id;
+    const comments = await CollaborationService.getComments(userId, taskId);
+    res.status(200).json(comments);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/todos/:id/attachments - Create attachment metadata
+todoRouter.post(
+  '/:id/attachments',
+  validate({ body: attachmentSchema }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const taskId = req.params.id;
+      const attachment = await CollaborationService.addAttachment(userId, taskId, req.body);
+      res.status(201).json(attachment);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// GET /api/todos/:id/attachments - List attachment metadata
+todoRouter.get('/:id/attachments', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const taskId = req.params.id;
+    const attachments = await CollaborationService.getAttachments(userId, taskId);
+    res.status(200).json(attachments);
+  } catch (error) {
+    next(error);
+  }
+});
 
 // POST /api/todos/:id/assign - Assign assignee
 todoRouter.post(
@@ -331,6 +312,50 @@ todoRouter.post('/:id/unassign', async (req: Request, res: Response, next: NextF
     const taskId = req.params.id;
     const updatedTodo = await CollaborationService.unassignTask(userId, taskId);
     res.status(200).json(updatedTodo);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ----------------------------------------------------
+// 4. WILDCARD SINGLE TASK ENDPOINTS (MUST BE LAST)
+// ----------------------------------------------------
+
+// GET /api/todos/:id - Fetch task details
+todoRouter.get('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const todoId = req.params.id;
+    const todo = await CollaborationService.getTodoById(userId, todoId);
+    res.status(200).json(todo);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/todos/:id - Update task details
+todoRouter.put(
+  '/:id',
+  validate({ body: updateTodoSchema }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const todoId = req.params.id;
+      const updatedTodo = await CollaborationService.updateTodo(userId, todoId, req.body);
+      res.status(200).json(updatedTodo);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
+// DELETE /api/todos/:id - Delete task
+todoRouter.delete('/:id', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const todoId = req.params.id;
+    const result = await CollaborationService.deleteTodo(userId, todoId);
+    res.status(200).json(result);
   } catch (error) {
     next(error);
   }

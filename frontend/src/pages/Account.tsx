@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
 import type { AccountSettings, ProfileData, User } from '../types'
-import { Avatar } from '../components/Avatar'
+import { Avatar } from '../components/shared/Avatar'
 import { updateProfile, updateAccountSettings, changePassword, deleteAccount } from '../api'
 
 interface AccountProps {
@@ -62,6 +62,20 @@ export function Account({
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deletePassword, setDeletePassword] = useState('')
   const [deletingAccount, setDeletingAccount] = useState(false)
+
+  const handleAvatarFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      setProfileForm((prev) => ({
+        ...prev,
+        avatarUrl: reader.result as string
+      }))
+    }
+    reader.readAsDataURL(file)
+  }
 
   const handleProfileSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -218,13 +232,30 @@ export function Account({
             />
           </div>
           <div className="field-group">
-            <label htmlFor="avatarUrl">Profile image URL</label>
-            <input
-              id="avatarUrl"
-              value={profileForm.avatarUrl}
-              onChange={(event) => setProfileForm({ ...profileForm, avatarUrl: event.target.value })}
-              placeholder="https://example.com/avatar.png"
-            />
+            <label htmlFor="avatarFile">Profile Image</label>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '8px' }}>
+              <input
+                id="avatarFile"
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarFileChange}
+                style={{
+                  background: 'var(--surface)',
+                  border: '1px solid var(--divider)',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  color: 'var(--text-foreground)',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  width: '100%'
+                }}
+              />
+            </div>
+            {profileForm.avatarUrl && !profileForm.avatarUrl.startsWith('data:') && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                Current path: {profileForm.avatarUrl}
+              </p>
+            )}
           </div>
           <button type="submit" disabled={saveProfileLoading}>
             {saveProfileLoading ? 'Saving…' : 'Save profile'}

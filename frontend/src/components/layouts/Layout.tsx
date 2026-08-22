@@ -1,0 +1,438 @@
+import { type ReactNode, useState, useEffect } from 'react'
+import type { User, WorkspaceSelection, Team } from '../../types'
+import { NotificationCenter } from '../notifications/NotificationCenter'
+import { Avatar } from '../shared/Avatar'
+import { Dropdown } from '../shared/Dropdown'
+import { Modal } from '../shared/Modal'
+
+type ActiveView = 'tasks' | 'account' | 'activity' | 'calendar' | 'chat' | 'members' | 'files' | 'reports' | 'settings' | 'notifications' | 'accept-invite'
+
+interface LayoutProps {
+  user: User | null
+  activeView: ActiveView
+  onViewChange: (view: ActiveView) => void
+  onLogout: () => void
+  children: ReactNode
+  wsStatus?: 'connected' | 'disconnected' | 'reconnecting'
+
+  // Workspace Switcher Sidebar Props
+  workspace?: WorkspaceSelection
+  setWorkspace?: (val: WorkspaceSelection) => void
+  teams?: Team[]
+  chatUnreadCounts?: Record<string, number>
+
+  // Search Props
+  query?: string
+  setQuery?: (val: string) => void
+
+  // Create Team Props
+  teamForm?: { name: string; description: string; purpose: string }
+  setTeamForm?: (val: any) => void
+  onCreateTeam?: () => void
+  teamError?: string
+  teamMessage?: string
+}
+
+function NavItem({
+  icon,
+  label,
+  isActive,
+  onClick,
+  badge,
+}: {
+  icon: React.ReactNode
+  label: string
+  isActive: boolean
+  onClick: () => void
+  badge?: number
+}) {
+  return (
+    <button
+      type="button"
+      className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
+      onClick={onClick}
+    >
+      <span className="sidebar-icon">{icon}</span>
+      <span className="sidebar-nav-label">{label}</span>
+      {badge != null && badge > 0 && (
+        <span className="sidebar-badge">{badge}</span>
+      )}
+    </button>
+  )
+}
+
+// SVG icon primitives
+const IconDashboard = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" />
+    <rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" />
+  </svg>
+)
+const IconTasks = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+  </svg>
+)
+const IconCalendar = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+  </svg>
+)
+const IconChat = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+  </svg>
+)
+const IconMembers = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75" />
+  </svg>
+)
+const IconFiles = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
+  </svg>
+)
+const IconActivity = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+  </svg>
+)
+const IconBell = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
+  </svg>
+)
+const IconReports = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="20" x2="18" y2="10" /><line x1="12" y1="20" x2="12" y2="4" /><line x1="6" y1="20" x2="6" y2="14" />
+  </svg>
+)
+const IconSettings = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" />
+    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+  </svg>
+)
+const IconAccount = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+)
+
+export function Layout({
+  user,
+  activeView,
+  onViewChange,
+  onLogout,
+  children,
+  wsStatus = 'disconnected',
+  workspace = { kind: 'private' },
+  setWorkspace = () => {},
+  teams = [],
+  chatUnreadCounts = {},
+  query = '',
+  setQuery = () => {},
+  teamForm = { name: '', description: '', purpose: '' },
+  setTeamForm = () => {},
+  onCreateTeam = () => {},
+  teamError = '',
+  teamMessage = '',
+}: LayoutProps) {
+
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+
+  useEffect(() => {
+    const handleOpenCreateModal = () => setIsCreateModalOpen(true)
+    window.addEventListener('open:create-team', handleOpenCreateModal)
+    return () => window.removeEventListener('open:create-team', handleOpenCreateModal)
+  }, [])
+
+  const handleCreateTeamSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onCreateTeam()
+    setIsCreateModalOpen(false)
+  }
+
+  const activeWorkspaceName = workspace.kind === 'private'
+    ? 'Personal Space'
+    : teams.find(t => t.id === workspace.teamId)?.name || 'Team Workspace'
+
+  const totalChatUnread = Object.values(chatUnreadCounts).reduce((a, b) => a + b, 0)
+  const isTeamView = workspace.kind === 'team'
+
+  const nav = (view: ActiveView) => () => {
+    onViewChange(view)
+    window.location.hash = `#/${view}`
+  }
+
+  return (
+    <div className="app-layout">
+      {/* 1. LEFT SIDEBAR */}
+      {user && (
+        <aside className="sidebar">
+          {/* Sidebar Top Logo */}
+          <div className="sidebar-brand">
+            <span className="brand-logo">C</span>
+            <div>
+              <h2 className="brand-name">TODO</h2>
+              <span className="brand-tagline">Work Smart Together</span>
+            </div>
+          </div>
+
+          {/* MAIN NAV */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">Main</h3>
+            <nav className="sidebar-nav">
+              <NavItem icon={<IconDashboard />} label="Dashboard" isActive={activeView === 'tasks'} onClick={nav('tasks')} />
+              <NavItem icon={<IconTasks />} label="My Tasks" isActive={false} onClick={() => { onViewChange('tasks'); window.location.hash = '#/tasks' }} />
+              <NavItem icon={<IconCalendar />} label="Calendar" isActive={activeView === 'calendar'} onClick={nav('calendar')} />
+            </nav>
+          </div>
+
+          {/* COLLABORATION */}
+          {isTeamView && (
+            <div className="sidebar-section">
+              <h3 className="sidebar-section-title">Collaboration</h3>
+              <nav className="sidebar-nav">
+                <NavItem icon={<IconChat />} label="Team Chat" isActive={activeView === 'chat'} onClick={nav('chat')} badge={totalChatUnread} />
+                <NavItem icon={<IconMembers />} label="Members" isActive={activeView === 'members'} onClick={nav('members')} />
+                <NavItem icon={<IconFiles />} label="Files" isActive={activeView === 'files'} onClick={nav('files')} />
+              </nav>
+            </div>
+          )}
+
+          {/* WORKSPACE */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">Workspace</h3>
+            <nav className="sidebar-nav">
+              <NavItem icon={<IconActivity />} label="Activity" isActive={activeView === 'activity'} onClick={nav('activity')} />
+              <NavItem icon={<IconBell />} label="Notifications" isActive={activeView === 'notifications'} onClick={nav('notifications')} />
+              {isTeamView && (
+                <NavItem icon={<IconReports />} label="Reports" isActive={activeView === 'reports'} onClick={nav('reports')} />
+              )}
+            </nav>
+          </div>
+
+          {/* SETTINGS */}
+          <div className="sidebar-section">
+            <h3 className="sidebar-section-title">Settings</h3>
+            <nav className="sidebar-nav">
+              {isTeamView && (
+                <NavItem icon={<IconSettings />} label="Workspace Settings" isActive={activeView === 'settings'} onClick={nav('settings')} />
+              )}
+              <NavItem icon={<IconAccount />} label="Account" isActive={activeView === 'account'} onClick={nav('account')} />
+            </nav>
+          </div>
+
+          {/* WORKSPACES LIST */}
+          <div className="sidebar-section workspaces-section">
+            <div className="section-header flex justify-between items-center pr-1 mb-2">
+              <h3 className="sidebar-section-title mb-0">Workspaces</h3>
+              <button
+                type="button"
+                className="create-ws-header-btn text-[11px] font-bold text-accent hover:text-accent-hover bg-accent-light/50 px-2 py-0.5 rounded-md"
+                onClick={() => setIsCreateModalOpen(true)}
+                title="Create Workspace Team"
+              >
+                + New Team
+              </button>
+            </div>
+
+            <div className="workspaces-list">
+              <button
+                type="button"
+                className={`workspace-item-btn ${workspace.kind === 'private' ? 'active' : ''}`}
+                onClick={() => setWorkspace({ kind: 'private' })}
+              >
+                <span className="workspace-avatar private-ws">P</span>
+                <span className="workspace-name">Personal Space</span>
+              </button>
+
+              {teams.map((team) => {
+                const isActive = workspace.kind === 'team' && workspace.teamId === team.id
+                const chatCount = chatUnreadCounts[team.id] || 0
+                return (
+                  <button
+                    key={team.id}
+                    type="button"
+                    className={`workspace-item-btn ${isActive ? 'active' : ''}`}
+                    onClick={() => setWorkspace({ kind: 'team', teamId: team.id })}
+                  >
+                    <span className="workspace-avatar team-ws">
+                      {team.name.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="workspace-name truncate">{team.name}</span>
+                    {chatCount > 0 && (
+                      <span className="sidebar-badge">{chatCount}</span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Quick Create Workspace Form */}
+            <form className="quick-create-team-form" onSubmit={handleCreateTeamSubmit}>
+              <input
+                type="text"
+                placeholder="New Workspace..."
+                value={teamForm.name}
+                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+                className="quick-team-input"
+              />
+              <button type="submit" className="quick-team-btn" title="Create Workspace">
+                +
+              </button>
+            </form>
+            {teamError && <p className="sidebar-error-text">{teamError}</p>}
+            {teamMessage && <p className="sidebar-success-text">{teamMessage}</p>}
+          </div>
+
+          {/* SIDEBAR FOOTER */}
+          <div className="sidebar-footer">
+            <Dropdown
+              trigger={
+                <button type="button" className="sidebar-profile-card">
+                  <Avatar src={user.avatarUrl} name={user.name} size={36} />
+                  <div className="profile-info">
+                    <span className="profile-name truncate">{user.name}</span>
+                    <span className="profile-email truncate">{user.email}</span>
+                  </div>
+                  <span className="profile-dropdown-arrow">▼</span>
+                </button>
+              }
+              align="left"
+              className="w-full"
+            >
+              <div className="profile-dropdown-menu">
+                <button type="button" className="dropdown-item" onClick={nav('account')}>
+                  Profile Settings
+                </button>
+                <div className="dropdown-divider"></div>
+                <button type="button" className="dropdown-item text-danger" onClick={onLogout}>
+                  Log Out
+                </button>
+              </div>
+            </Dropdown>
+
+            {/* Live Sync Status indicator */}
+            <div className="sync-status">
+              <span className={`sync-dot sync-status-${wsStatus}`}></span>
+              <span className="sync-text">
+                {wsStatus === 'connected' ? 'Live Sync' : wsStatus === 'reconnecting' ? 'Connecting...' : 'Offline'}
+              </span>
+            </div>
+          </div>
+        </aside>
+      )}
+
+      {/* 2. MAIN CONTAINER AREA */}
+      <div className="main-viewport">
+        {/* TOP NAVIGATION HEADER */}
+        {user && (
+          <header className="top-header">
+            {/* Breadcrumbs / Workspace indicator */}
+            <div className="header-breadcrumbs">
+              <span className="breadcrumb-parent">Workspaces</span>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">{activeWorkspaceName}</span>
+            </div>
+
+            {/* Search and Action items */}
+            <div className="header-actions">
+              {/* Search tasks box */}
+              {activeView === 'tasks' && (
+                <div className="header-search-bar">
+                  <span className="search-icon">🔍</span>
+                  <input
+                    type="text"
+                    placeholder="Search tasks, projects, people..."
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                  <kbd className="search-shortcut">Ctrl K</kbd>
+                </div>
+              )}
+
+              {/* Notification Center */}
+              <NotificationCenter />
+            </div>
+          </header>
+        )}
+
+        {/* PAGE CONTENT CONTAINER */}
+        <main className={`page-content ${!user ? 'auth-view' : ''}`}>
+          {children}
+        </main>
+      </div>
+
+      {/* CREATE WORKSPACE TEAM MODAL */}
+      <Modal
+        isOpen={isCreateModalOpen}
+        onClose={() => setIsCreateModalOpen(false)}
+        title="Create New Workspace Team"
+      >
+        <form onSubmit={handleCreateTeamSubmit} className="flex flex-col gap-4">
+          <div>
+            <label className="text-xs font-bold text-secondary uppercase tracking-wider block mb-1">
+              Workspace Team Name *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="e.g. Operations Team, Marketing Hub"
+              value={teamForm.name}
+              onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
+              className="form-field w-full text-sm p-3 border border-divider rounded-xl"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-secondary uppercase tracking-wider block mb-1">
+              Description (Optional)
+            </label>
+            <textarea
+              placeholder="Brief description of what this team workspace manages..."
+              value={teamForm.description}
+              onChange={(e) => setTeamForm({ ...teamForm, description: e.target.value })}
+              className="form-field w-full text-sm p-3 border border-divider rounded-xl min-h-[80px]"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-bold text-secondary uppercase tracking-wider block mb-1">
+              Purpose / Goal (Optional)
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. Q3 Deliverables, Customer Support"
+              value={teamForm.purpose}
+              onChange={(e) => setTeamForm({ ...teamForm, purpose: e.target.value })}
+              className="form-field w-full text-sm p-3 border border-divider rounded-xl"
+            />
+          </div>
+
+          {teamError && <p className="text-xs text-danger font-medium mt-1">{teamError}</p>}
+
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-divider">
+            <button
+              type="button"
+              className="btn-secondary text-xs px-4 py-2 rounded-xl"
+              onClick={() => setIsCreateModalOpen(false)}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              className="btn-primary text-xs px-5 py-2 rounded-xl font-bold"
+            >
+              Create Workspace
+            </button>
+          </div>
+        </form>
+      </Modal>
+    </div>
+  )
+}

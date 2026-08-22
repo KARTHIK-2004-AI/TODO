@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createTodo, deleteTodo, fetchTodos, updateTodo } from '../api'
 import type { Todo, WorkspaceSelection } from '../types'
 
@@ -145,6 +145,33 @@ export function useTodos(workspace: WorkspaceSelection) {
     () => visibleTodos.filter((todo) => todo.completed).length,
     [visibleTodos]
   )
+
+  // Real-time synchronization
+  useEffect(() => {
+    const handleWsEvent = (event: Event) => {
+      const customEvent = event as CustomEvent
+      const wsMessage = customEvent.detail
+      if (!wsMessage || !wsMessage.eventType) return
+
+      const { eventType, payload } = wsMessage
+
+      if (eventType === 'TASK_CREATED') {
+        setTodos((current) => {
+          if (current.some((item) => item.id === payload.id)) return current
+          return [payload, ...current]
+        })
+      } else if (eventType === 'TASK_UPDATED') {
+        setTodos((current) =>
+          current.map((item) => (item.id === payload.id ? { ...item, ...payload } : item))
+        )
+      } else if (eventType === 'TASK_DELETED') {
+        setTodos((current) => current.filter((item) => item.id !== payload.id))
+      }
+    }
+
+    window.addEventListener('ws:event', handleWsEvent)
+    return () => window.removeEventListener('ws:event', handleWsEvent)
+  }, [])
 
   return {
     todos,

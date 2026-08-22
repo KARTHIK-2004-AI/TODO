@@ -334,13 +334,19 @@ export async function deleteComment(commentId: string): Promise<{ message: strin
   })
 }
 
+export async function markCommentsAsRead(taskId: string): Promise<{ message: string; commentIds: string[] }> {
+  return request<{ message: string; commentIds: string[] }>(`/todos/${taskId}/comments/read`, {
+    method: 'POST',
+  })
+}
+
 export async function fetchAttachments(taskId: string): Promise<TaskAttachment[]> {
   return request<TaskAttachment[]>(`/todos/${taskId}/attachments`)
 }
 
 export async function addAttachment(
   taskId: string,
-  data: { fileName: string; fileType: string; fileSize: number; storagePath: string }
+  data: { fileName: string; fileType: string; fileSize: number; storagePath: string; isImportant?: boolean }
 ): Promise<TaskAttachment> {
   return request<TaskAttachment>(`/todos/${taskId}/attachments`, {
     method: 'POST',
@@ -399,4 +405,56 @@ export async function downloadAttachment(attachmentId: string, defaultFileName: 
   a.click()
   document.body.removeChild(a)
   window.URL.revokeObjectURL(url)
+}
+
+export async function verifyEmail(token: string): Promise<{ message: string }> {
+  return request<{ message: string }>(`/auth/verify?token=${encodeURIComponent(token)}`, {
+    method: 'GET',
+  })
+}
+
+export async function forgotPassword(email: string): Promise<{ message: string }> {
+  return request<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  })
+}
+
+export async function resetPassword(token: string, newPassword: string): Promise<{ message: string }> {
+  return request<{ message: string }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token, password: newPassword }),
+  })
+}
+
+export async function fetchChatMessages(teamId: string, page = 1, limit = 50, search?: string): Promise<{ messages: any[]; meta: any }> {
+  const params = new URLSearchParams()
+  params.set('page', String(page))
+  params.set('limit', String(limit))
+  if (search) params.set('search', search)
+  return request<any>(`/teams/${teamId}/chat?${params.toString()}`)
+}
+
+export async function postChatMessage(teamId: string, message: string, metadata?: any): Promise<any> {
+  return request<any>(`/teams/${teamId}/chat`, {
+    method: 'POST',
+    body: JSON.stringify({ message, metadata }),
+  })
+}
+
+export async function markChatRead(teamId: string): Promise<{ success: boolean }> {
+  return request<{ success: boolean }>(`/teams/${teamId}/chat/read`, {
+    method: 'POST',
+  })
+}
+
+export async function fetchChatUnreadCounts(): Promise<Array<{ teamId: string; count: number }>> {
+  return request<Array<{ teamId: string; count: number }>>('/teams/chat/unread-counts')
+}
+
+export async function updateAttachment(attachmentId: string, payload: { isImportant: boolean }): Promise<any> {
+  return request<any>(`/attachments/${attachmentId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  })
 }

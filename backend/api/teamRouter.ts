@@ -57,6 +57,18 @@ teamRouter.get('/', async (req: Request, res: Response, next: NextFunction): Pro
   }
 });
 
+// GET /api/teams/:teamId/status - Get team stats
+teamRouter.get('/:teamId/status', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user!.id;
+    const { teamId } = req.params;
+    const team = await CollaborationService.getTeam(userId, teamId);
+    res.status(200).json(team.stats);
+  } catch (error) {
+    next(error);
+  }
+});
+
 // GET /api/teams/:teamId - Get team details & members
 teamRouter.get('/:teamId', async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {

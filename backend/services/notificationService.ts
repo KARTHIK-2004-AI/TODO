@@ -1,5 +1,6 @@
 import prisma from '../database/client';
 import { AppError } from '../middleware/errorHandler';
+import { eventEmitter } from './eventEmitter';
 
 export class NotificationService {
   static async createNotification(data: {
@@ -16,7 +17,7 @@ export class NotificationService {
       throw new AppError('User not found for notification', 404);
     }
 
-    return prisma.notification.create({
+    const notification = await prisma.notification.create({
       data: {
         userId: data.userId,
         title: data.title,
@@ -25,6 +26,10 @@ export class NotificationService {
         metadata: data.metadata ?? null,
       },
     });
+
+    eventEmitter.emit('notification.created', { notification });
+
+    return notification;
   }
 
   static async markAsRead(userId: string, notificationId: string) {

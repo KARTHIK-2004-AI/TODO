@@ -8,6 +8,7 @@ import {
   removeTeamMember,
   renameTeam,
   revokeTeamInvite,
+  updateTeamMemberRole,
 } from '../api'
 import type { Team, TeamMember, TeamRole, User, WorkspaceSelection } from '../types'
 
@@ -269,7 +270,33 @@ export function useTeams(
     }
   }
 
+  const handleUpdateMemberRoleAction = async (selectedTeam: Team, userId: string, role: TeamRole) => {
+    if (!canPerformAction(currentRole, 'invite')) {
+      setTeamError('Only owners and admins can update member roles.')
+      return
+    }
+    try {
+      const updatedMember = await updateTeamMemberRole(selectedTeam.id, userId, role)
+      setTeams((current) =>
+        current.map((team) => {
+          if (team.id !== selectedTeam.id) return team
+          return {
+            ...team,
+            members: (team.members ?? []).map((m) => (m.userId === userId ? { ...m, role: updatedMember.role } : m)),
+          }
+        })
+      )
+      setTeamMessage(`Updated member role to ${role}.`)
+      setTeamError('')
+    } catch (error) {
+      setTeamError(error instanceof Error ? error.message : 'Could not update member role')
+    }
+  }
+
   return {
+    handleUpdateMemberRole: handleUpdateMemberRoleAction,
+    selectedTeam,
+    currentRole,
     teams,
     setTeams,
     teamForm,

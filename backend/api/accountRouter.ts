@@ -22,6 +22,30 @@ const deleteAccountSchema = z.object({
   password: z.string().optional(),
 });
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+});
+
+/**
+ * PUT /account/change-password
+ * Purpose: Change password.
+ */
+accountRouter.put(
+  '/change-password',
+  validate({ body: changePasswordSchema }),
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const userId = req.user!.id;
+      const { currentPassword, newPassword } = req.body;
+      const result = await UserService.changePassword(userId, currentPassword, newPassword);
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+);
+
 /**
  * GET /account/settings
  * Purpose: Retrieve user preferences.

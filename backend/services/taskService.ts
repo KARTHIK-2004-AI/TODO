@@ -1,6 +1,6 @@
 import prisma from '../database/client';
 import { AppError } from '../middleware/errorHandler';
-import { eventEmitter } from './eventService';
+import { eventEmitter } from './eventEmitter';
 import { TaskPriority, TaskStatus, Role } from '../prisma/client';
 
 export interface TaskFilterOptions {
@@ -93,7 +93,12 @@ export class TaskService {
         comments: {
           orderBy: { createdAt: 'asc' },
           include: {
-            user: { select: { id: true, name: true, email: true, avatarUrl: true } }
+            user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+            readStatuses: {
+              include: {
+                user: { select: { id: true, name: true } }
+              }
+            }
           }
         },
         attachments: {
@@ -242,6 +247,7 @@ export class TaskService {
       dueDate?: Date | string | null;
       startDate?: Date | string | null;
       estimatedHours?: number | null;
+      archived?: boolean;
     }
   ) {
     const todo = await prisma.todo.findUnique({
@@ -371,6 +377,10 @@ export class TaskService {
       historyPromises.push(this.logHistory(todoId, userId, 'ESTIMATED_HOURS_CHANGED', todo.estimatedHours?.toString() ?? null, data.estimatedHours?.toString() ?? null));
     }
 
+    if (data.archived !== undefined && data.archived !== todo.archived) {
+      historyPromises.push(this.logHistory(todoId, userId, 'TASK_ARCHIVED', String(todo.archived), String(data.archived)));
+    }
+
     // Perform DB updates
     const updatedTodo = await prisma.todo.update({
       where: { id: todoId },
@@ -384,6 +394,7 @@ export class TaskService {
         dueDate: data.dueDate !== undefined ? (data.dueDate ? new Date(data.dueDate) : null) : undefined,
         startDate: data.startDate !== undefined ? (data.startDate ? new Date(data.startDate) : null) : undefined,
         estimatedHours: data.estimatedHours !== undefined ? data.estimatedHours : undefined,
+        archived: data.archived !== undefined ? data.archived : undefined,
         completedAt: nextCompleted === true ? new Date() : (nextCompleted === false ? null : undefined),
       },
     });
@@ -418,6 +429,21 @@ export class TaskService {
         eventEmitter.emit('todo.unassigned', { todo: updatedTodo, oldAssigneeId: oldAssignee, actingUserId: userId });
       }
     }
+
+    // Trigger due date changes
+    const oldDueTime = todo.dueDate ? new Date(todo.dueDate).getTime() : 0;
+    const newDueTime = updatedTodo.dueDate ? new Date(updatedTodo.dueDate).getTime() : 0;
+    if (oldDueTime !== newDueTime) {
+      eventEmitter.emit('todo.due_date_changed', { todo: updatedTodo, oldDueDate: todo.dueDate, newDueDate: updatedTodo.dueDate, actingUserId: userId });
+    }
+
+    // Trigger archiving
+    if (updatedTodo.archived && !todo.archived) {
+      eventEmitter.emit('todo.archived', { todo: updatedTodo, actingUserId: userId });
+    }
+
+    // Trigger generic todo.updated event for real-time ws sync
+    eventEmitter.emit('todo.updated', { todo: updatedTodo, actingUserId: userId });
 
     return updatedTodo;
   }
@@ -512,31 +538,57 @@ export class TaskService {
       where: { taskId },
       orderBy: { createdAt: 'asc' }, // Newest last
       include: {
-        user: { select: { id: true, name: true, email: true, avatarUrl: true } }
+        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+        readStatuses: {
+          include: {
+            user: { select: { id: true, name: true } }
+          }
+        }
       }
     });
   }
 
   static async updateComment(userId: string, commentId: string, message: string) {
-    const comment = await prisma.taskComment.findUnique({ where: { id: commentId } });
+    const comment = await prisma.taskComment.findUnique({
+      where: { id: commentId },
+      include: { task: true }
+    });
     if (!comment) throw new AppError('Comment not found', 404);
     if (comment.userId !== userId) throw new AppError('You can only edit your own comments', 403);
 
-    return prisma.taskComment.update({
+    const updated = await prisma.taskComment.update({
       where: { id: commentId },
       data: { message },
       include: {
         user: { select: { id: true, name: true, email: true, avatarUrl: true } }
       }
     });
+
+    eventEmitter.emit('task.comment_updated', {
+      comment: updated,
+      workspaceId: comment.task.teamId,
+      actingUserId: userId,
+    });
+
+    return updated;
   }
 
   static async deleteComment(userId: string, commentId: string) {
-    const comment = await prisma.taskComment.findUnique({ where: { id: commentId } });
+    const comment = await prisma.taskComment.findUnique({
+      where: { id: commentId },
+      include: { task: true }
+    });
     if (!comment) throw new AppError('Comment not found', 404);
     if (comment.userId !== userId) throw new AppError('You can only delete your own comments', 403);
 
     await prisma.taskComment.delete({ where: { id: commentId } });
+
+    eventEmitter.emit('task.comment_deleted', {
+      commentId,
+      taskId: comment.taskId,
+      workspaceId: comment.task.teamId,
+      actingUserId: userId,
+    });
 
     return { message: 'Comment deleted successfully' };
   }
@@ -546,7 +598,7 @@ export class TaskService {
   static async addAttachment(
     userId: string,
     taskId: string,
-    data: { fileName: string; fileType: string; fileSize: number; storagePath: string }
+    data: { fileName: string; fileType: string; fileSize: number; storagePath: string; isImportant?: boolean }
   ) {
     const todo = await prisma.todo.findUnique({ where: { id: taskId } });
     if (!todo) throw new AppError('Task not found', 404);
@@ -590,6 +642,7 @@ export class TaskService {
         fileType: data.fileType,
         fileSize: data.fileSize,
         storagePath: diskFileName,
+        isImportant: data.isImportant ?? false,
       },
       include: {
         uploader: { select: { id: true, name: true, email: true } }
@@ -667,7 +720,47 @@ export class TaskService {
       }
     }
 
+    // Emit todo.updated so WebSocket updates details
+    const freshTodo = await prisma.todo.findUnique({ where: { id: attachment.taskId } });
+    if (freshTodo) {
+      eventEmitter.emit('todo.updated', { todo: freshTodo, actingUserId: userId });
+    }
+
     return { message: 'Attachment deleted successfully' };
+  }
+
+  static async updateAttachment(userId: string, attachmentId: string, isImportant?: boolean) {
+    const attachment = await prisma.taskAttachment.findUnique({
+      where: { id: attachmentId },
+      include: { task: true }
+    });
+    if (!attachment) throw new AppError('Attachment not found', 404);
+
+    const todo = attachment.task;
+    if (todo.teamId) {
+      const membership = await prisma.teamMember.findUnique({
+        where: { teamId_userId: { teamId: todo.teamId, userId } },
+      });
+      if (!membership) throw new AppError('Not a member of this team', 403, 'NOT_TEAM_MEMBER');
+    } else {
+      if (todo.userId !== userId && todo.assignedToUserId !== userId) {
+        throw new AppError('Forbidden: Access denied to private task attachment', 403);
+      }
+    }
+
+    const updated = await prisma.taskAttachment.update({
+      where: { id: attachmentId },
+      data: {
+        isImportant: isImportant !== undefined ? !!isImportant : attachment.isImportant,
+      },
+      include: {
+        uploader: { select: { id: true, name: true, email: true } }
+      }
+    });
+
+    eventEmitter.emit('todo.updated', { todo, actingUserId: userId });
+
+    return updated;
   }
 
   // --- SPECIFIC ASSIGNMENT TRIGGER METHODS ---
@@ -678,5 +771,62 @@ export class TaskService {
 
   static async unassignTask(userId: string, taskId: string) {
     return this.updateTodo(userId, taskId, { assignedToUserId: null });
+  }
+
+  static async markCommentsAsRead(userId: string, taskId: string) {
+    const todo = await prisma.todo.findUnique({ where: { id: taskId } });
+    if (!todo) throw new AppError('Task not found', 404);
+
+    if (todo.teamId) {
+      const membership = await prisma.teamMember.findUnique({
+        where: { teamId_userId: { teamId: todo.teamId, userId } },
+      });
+      if (!membership) throw new AppError('Not a member of this team', 403, 'NOT_TEAM_MEMBER');
+    } else {
+      if (todo.userId !== userId) throw new AppError('Forbidden', 403);
+    }
+
+    const comments = await prisma.taskComment.findMany({
+      where: { taskId },
+      select: { id: true },
+    });
+
+    const commentIds = comments.map((c) => c.id);
+
+    const existingStatuses = await prisma.commentReadStatus.findMany({
+      where: {
+        commentId: { in: commentIds },
+        userId,
+      },
+      select: { commentId: true },
+    });
+
+    const existingCommentIds = new Set(existingStatuses.map((s) => s.commentId));
+    const newReadComments = commentIds.filter((cid) => !existingCommentIds.has(cid));
+
+    if (newReadComments.length > 0) {
+      await prisma.commentReadStatus.createMany({
+        data: newReadComments.map((commentId) => ({
+          commentId,
+          userId,
+        })),
+        skipDuplicates: true,
+      });
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { name: true },
+      });
+
+      eventEmitter.emit('task.comments_read', {
+        taskId,
+        userId,
+        userName: user?.name || 'Someone',
+        commentIds: newReadComments,
+        teamId: todo.teamId,
+      });
+    }
+
+    return { message: 'Comments marked as read', commentIds: newReadComments };
   }
 }

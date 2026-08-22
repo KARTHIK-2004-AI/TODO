@@ -1,5 +1,6 @@
 import prisma from '../database/client';
 import { AppError } from '../middleware/errorHandler';
+import { eventEmitter } from './eventEmitter';
 
 export interface ActivityFilterOptions {
   page?: number;
@@ -16,7 +17,7 @@ export class ActivityService {
     entityId: string;
     metadata?: any;
   }) {
-    return prisma.activityLog.create({
+    const log = await prisma.activityLog.create({
       data: {
         teamId: data.teamId ?? null,
         userId: data.userId,
@@ -26,6 +27,19 @@ export class ActivityService {
         metadata: data.metadata ?? {},
       },
     });
+
+    const logWithUser = await prisma.activityLog.findUnique({
+      where: { id: log.id },
+      include: {
+        user: { select: { id: true, email: true, name: true, avatarUrl: true } }
+      }
+    });
+
+    if (logWithUser) {
+      eventEmitter.emit('activity.created', { log: logWithUser });
+    }
+
+    return log;
   }
 
   private static buildWhereClause(

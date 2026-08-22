@@ -13,6 +13,10 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/socket': {
+        target: 'ws://127.0.0.1:4000',
+        ws: true,
+      },
     },
   },
 })

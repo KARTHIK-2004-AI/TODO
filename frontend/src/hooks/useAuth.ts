@@ -12,8 +12,8 @@ export function useAuth(onLogoutCallback?: () => void) {
   const [authError, setAuthError] = useState('')
   const [loading, setLoading] = useState(false)
   const [user, setUser] = useState<User | null>(() => {
-    const storedUser = localStorage.getItem('authUser')
-    const storedToken = localStorage.getItem('authToken')
+    const storedUser = localStorage.getItem('authUser') || sessionStorage.getItem('authUser')
+    const storedToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken')
     if (storedUser && storedToken) {
       try {
         return JSON.parse(storedUser) as User
@@ -24,13 +24,14 @@ export function useAuth(onLogoutCallback?: () => void) {
     return null
   })
 
-  async function handleLogin() {
+  async function handleLogin(rememberMe = true) {
     setLoading(true)
     setAuthError('')
     try {
       const response = await login(authForm.email, authForm.password || '')
-      localStorage.setItem('authToken', response.token)
-      localStorage.setItem('authUser', JSON.stringify(response.user))
+      const storage = rememberMe ? localStorage : sessionStorage
+      storage.setItem('authToken', response.token)
+      storage.setItem('authUser', JSON.stringify(response.user))
       setUser(response.user)
       setAuthForm({ email: '', password: '', name: '' })
       return response.user
@@ -46,15 +47,23 @@ export function useAuth(onLogoutCallback?: () => void) {
     setLoading(true)
     setAuthError('')
     try {
-      await register(authForm.email, authForm.password || '', authForm.name || '')
-      const response = await login(authForm.email, authForm.password || '')
-      localStorage.setItem('authToken', response.token)
-      localStorage.setItem('authUser', JSON.stringify(response.user))
-      setUser(response.user)
-      setAuthForm({ email: '', password: '', name: '' })
-      return response.user
+      const email = authForm.email
+      const password = authForm.password || ''
+      const name = authForm.name || ''
+      const res = await register(email, password, name)
+      if (import.meta.env.DEV) {
+        const loginRes = await login(email, password)
+        localStorage.setItem('authToken', loginRes.token)
+        localStorage.setItem('authUser', JSON.stringify(loginRes.user))
+        setUser(loginRes.user)
+        setAuthForm({ email: '', password: '', name: '' })
+        return loginRes.user
+      } else {
+        setAuthForm({ email: '', password: '', name: '' })
+        return res
+      }
     } catch (error) {
-      setAuthError(error instanceof Error ? error.message : 'Authentication failed')
+      setAuthError(error instanceof Error ? error.message : 'Registration failed')
       throw error
     } finally {
       setLoading(false)
@@ -64,6 +73,8 @@ export function useAuth(onLogoutCallback?: () => void) {
   function handleLogout() {
     localStorage.removeItem('authToken')
     localStorage.removeItem('authUser')
+    sessionStorage.removeItem('authToken')
+    sessionStorage.removeItem('authUser')
     setUser(null)
     if (onLogoutCallback) {
       onLogoutCallback()
