@@ -109,10 +109,19 @@ export async function getTodoById(id: string): Promise<Todo> {
   return request<Todo>(`/todos/${id}`)
 }
 
-export async function createTodo(title: string, description: string, teamId?: string, assignedUserId?: string | null): Promise<Todo> {
-  const payload: { title: string; description: string; teamId?: string; assignedUserId?: string | null } = { title, description }
+export async function createTodo(
+  title: string,
+  description: string,
+  teamId?: string,
+  assignedUserId?: string | null,
+  dueDate?: string | null,
+  priority?: string
+): Promise<Todo> {
+  const payload: Record<string, any> = { title, description }
   if (teamId) payload.teamId = teamId
   if (assignedUserId) payload.assignedUserId = assignedUserId
+  if (dueDate) payload.dueDate = dueDate
+  if (priority) payload.priority = priority
 
   return request<Todo>('/todos', {
     method: 'POST',

@@ -146,14 +146,16 @@ export function TeamCalendar({ selectedTeam, todosProps, onSelectTodo, onAddTask
 
   // Helper to match todos to a calendar date
   const getTodosForDate = (date: Date) => {
+    const targetY = date.getFullYear()
+    const targetM = date.getMonth()
+    const targetD = date.getDate()
+
     return todos.filter((todo) => {
       if (!todo.dueDate) return false
-      const todoDate = new Date(todo.dueDate)
-      return (
-        todoDate.getDate() === date.getDate() &&
-        todoDate.getMonth() === date.getMonth() &&
-        todoDate.getFullYear() === date.getFullYear()
-      )
+      const d = new Date(todo.dueDate)
+      const localMatch = d.getFullYear() === targetY && d.getMonth() === targetM && d.getDate() === targetD
+      const utcMatch = d.getUTCFullYear() === targetY && d.getUTCMonth() === targetM && d.getUTCDate() === targetD
+      return localMatch || utcMatch
     })
   }
 

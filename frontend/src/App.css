@@ -2345,6 +2345,7 @@ button[type='submit'],
   flex-shrink: 0;
   padding: 24px 16px;
   justify-content: space-between;
+  overflow-y: auto;
 }
 
 .sidebar-brand {
@@ -2714,6 +2715,79 @@ button[type='submit'],
 
 .breadcrumb-current {
   color: var(--text-primary);
+  font-weight: 700;
+}
+
+.header-workspace-selector-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  transition: background 0.15s ease, border-color 0.15s ease;
+  transform: none !important;
+}
+
+.header-workspace-selector-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--accent);
+}
+
+.selector-arrow {
+  font-size: 0.65rem;
+  color: var(--text-secondary);
+  margin-left: 2px;
+}
+
+.workspace-dropdown-menu {
+  min-width: 240px;
+  padding: 6px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow-lg);
+}
+
+.workspace-dropdown-menu .dropdown-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  padding: 6px 10px 4px;
+}
+
+.workspace-dropdown-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  transition: background-color 0.15s ease;
+}
+
+.workspace-dropdown-menu .dropdown-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.workspace-dropdown-menu .dropdown-item.active {
+  background-color: var(--accent-light);
+  color: var(--accent);
   font-weight: 700;
 }
 
@@ -3768,5 +3842,71 @@ button[type='submit'],
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") !important;
   background-repeat: no-repeat !important;
   background-position: right 6px center !important;
+}
+
+/* ==========================================
+   HEADER WORKSPACE SELECTOR & NOTIFICATION OVERLAY Z-INDEX FIXES
+   ========================================== */
+.notification-center-container {
+  position: relative !important;
+  z-index: 99999 !important;
+}
+
+.notification-dropdown {
+  position: absolute !important;
+  top: calc(100% + 10px) !important;
+  right: 0 !important;
+  width: 360px !important;
+  max-height: 480px !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.22) !important;
+  z-index: 99999 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.top-header {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 1000 !important;
+  overflow: visible !important;
+}
+
+.header-breadcrumbs {
+  position: relative !important;
+  z-index: 1005 !important;
+}
+
+.workspace-dropdown-menu {
+  position: absolute !important;
+  top: calc(100% + 8px) !important;
+  left: 0 !important;
+  min-width: 240px !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22) !important;
+  z-index: 99999 !important;
+  padding: 8px !important;
+}
+
+.create-ws-btn {
+  background-color: var(--bg-surface);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.create-ws-btn:hover {
+  background-color: var(--accent);
+  color: #ffffff;
 }
 

@@ -143,6 +143,12 @@ export function Dashboard({
   const [activeSubTab, setActiveSubTab] = useState<SubTab>('overview')
   const [isAddTaskOpen, setIsAddTaskOpen] = useState(false)
 
+  useEffect(() => {
+    const handleOpenAddTask = () => setIsAddTaskOpen(true)
+    window.addEventListener('open:add-task', handleOpenAddTask)
+    return () => window.removeEventListener('open:add-task', handleOpenAddTask)
+  }, [])
+
   // Reset tab selection when workspace switches context
   useEffect(() => {
     setActiveSubTab('overview')
@@ -473,9 +479,13 @@ export function Dashboard({
           title={todoForm.title}
           description={todoForm.description}
           assignedUserId={todoForm.assignedUserId}
+          dueDate={(todoForm as any).dueDate}
+          priority={(todoForm as any).priority}
           onChangeTitle={(val) => setTodoForm({ ...todoForm, title: val })}
           onChangeDescription={(val) => setTodoForm({ ...todoForm, description: val })}
           onChangeAssignedUserId={(val) => setTodoForm({ ...todoForm, assignedUserId: val })}
+          onChangeDueDate={(val) => setTodoForm({ ...todoForm, dueDate: val })}
+          onChangePriority={(val) => setTodoForm({ ...todoForm, priority: val })}
           onSubmit={handleCreateTaskSubmit}
           isLoading={todoLoading}
           isShared={workspace.kind === 'team'}

@@ -5,7 +5,7 @@ import { Avatar } from '../shared/Avatar'
 import { Dropdown } from '../shared/Dropdown'
 import { Modal } from '../shared/Modal'
 
-type ActiveView = 'tasks' | 'account' | 'activity' | 'calendar' | 'chat' | 'members' | 'files' | 'reports' | 'settings' | 'notifications' | 'accept-invite'
+type ActiveView = 'tasks' | 'account' | 'calendar' | 'chat' | 'members' | 'files' | 'reports' | 'settings' | 'accept-invite'
 
 interface LayoutProps {
   user: User | null
@@ -75,7 +75,7 @@ const IconTasks = () => (
 )
 const IconCalendar = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+    <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
   </svg>
 )
 const IconChat = () => (
@@ -92,16 +92,6 @@ const IconMembers = () => (
 const IconFiles = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z" />
-  </svg>
-)
-const IconActivity = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-  </svg>
-)
-const IconBell = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" />
   </svg>
 )
 const IconReports = () => (
@@ -155,9 +145,14 @@ export function Layout({
     setIsCreateModalOpen(false)
   }
 
+  // Deduplicate teams by normalized name + ID
+  const uniqueTeams = Array.from(
+    new Map(teams.map((t) => [t.name.trim().toLowerCase(), t])).values()
+  )
+
   const activeWorkspaceName = workspace.kind === 'private'
     ? 'Personal Space'
-    : teams.find(t => t.id === workspace.teamId)?.name || 'Team Workspace'
+    : uniqueTeams.find(t => t.id === workspace.teamId)?.name || teams.find(t => t.id === workspace.teamId)?.name || 'Team Workspace'
 
   const totalChatUnread = Object.values(chatUnreadCounts).reduce((a, b) => a + b, 0)
   const isTeamView = workspace.kind === 'team'
@@ -186,7 +181,16 @@ export function Layout({
             <h3 className="sidebar-section-title">Main</h3>
             <nav className="sidebar-nav">
               <NavItem icon={<IconDashboard />} label="Dashboard" isActive={activeView === 'tasks'} onClick={nav('tasks')} />
-              <NavItem icon={<IconTasks />} label="My Tasks" isActive={false} onClick={() => { onViewChange('tasks'); window.location.hash = '#/tasks' }} />
+              <NavItem
+                icon={<IconTasks />}
+                label="My Tasks"
+                isActive={workspace.kind === 'private' && activeView === 'tasks'}
+                onClick={() => {
+                  setWorkspace({ kind: 'private' })
+                  onViewChange('tasks')
+                  window.location.hash = '#/tasks'
+                }}
+              />
               <NavItem icon={<IconCalendar />} label="Calendar" isActive={activeView === 'calendar'} onClick={nav('calendar')} />
             </nav>
           </div>
@@ -194,37 +198,16 @@ export function Layout({
           {/* COLLABORATION */}
           {isTeamView && (
             <div className="sidebar-section">
-              <h3 className="sidebar-section-title">Collaboration</h3>
+              <h3 className="sidebar-section-title">Team Workspace</h3>
               <nav className="sidebar-nav">
                 <NavItem icon={<IconChat />} label="Team Chat" isActive={activeView === 'chat'} onClick={nav('chat')} badge={totalChatUnread} />
-                <NavItem icon={<IconMembers />} label="Members" isActive={activeView === 'members'} onClick={nav('members')} />
+                <NavItem icon={<IconMembers />} label="Members & Invites" isActive={activeView === 'members'} onClick={nav('members')} />
                 <NavItem icon={<IconFiles />} label="Files" isActive={activeView === 'files'} onClick={nav('files')} />
+                <NavItem icon={<IconReports />} label="Reports" isActive={activeView === 'reports'} onClick={nav('reports')} />
+                <NavItem icon={<IconSettings />} label="Workspace Settings" isActive={activeView === 'settings'} onClick={nav('settings')} />
               </nav>
             </div>
           )}
-
-          {/* WORKSPACE */}
-          <div className="sidebar-section">
-            <h3 className="sidebar-section-title">Workspace</h3>
-            <nav className="sidebar-nav">
-              <NavItem icon={<IconActivity />} label="Activity" isActive={activeView === 'activity'} onClick={nav('activity')} />
-              <NavItem icon={<IconBell />} label="Notifications" isActive={activeView === 'notifications'} onClick={nav('notifications')} />
-              {isTeamView && (
-                <NavItem icon={<IconReports />} label="Reports" isActive={activeView === 'reports'} onClick={nav('reports')} />
-              )}
-            </nav>
-          </div>
-
-          {/* SETTINGS */}
-          <div className="sidebar-section">
-            <h3 className="sidebar-section-title">Settings</h3>
-            <nav className="sidebar-nav">
-              {isTeamView && (
-                <NavItem icon={<IconSettings />} label="Workspace Settings" isActive={activeView === 'settings'} onClick={nav('settings')} />
-              )}
-              <NavItem icon={<IconAccount />} label="Account" isActive={activeView === 'account'} onClick={nav('account')} />
-            </nav>
-          </div>
 
           {/* WORKSPACES LIST */}
           <div className="sidebar-section workspaces-section">
@@ -232,7 +215,7 @@ export function Layout({
               <h3 className="sidebar-section-title mb-0">Workspaces</h3>
               <button
                 type="button"
-                className="create-ws-header-btn text-[11px] font-bold text-accent hover:text-accent-hover bg-accent-light/50 px-2 py-0.5 rounded-md"
+                className="create-ws-btn text-[11px] font-bold text-accent hover:text-accent-hover bg-accent-light/50 px-2 py-0.5 rounded-md"
                 onClick={() => setIsCreateModalOpen(true)}
                 title="Create Workspace Team"
               >
@@ -250,7 +233,7 @@ export function Layout({
                 <span className="workspace-name">Personal Space</span>
               </button>
 
-              {teams.map((team) => {
+              {uniqueTeams.map((team) => {
                 const isActive = workspace.kind === 'team' && workspace.teamId === team.id
                 const chatCount = chatUnreadCounts[team.id] || 0
                 return (
@@ -287,6 +270,14 @@ export function Layout({
             </form>
             {teamError && <p className="sidebar-error-text">{teamError}</p>}
             {teamMessage && <p className="sidebar-success-text">{teamMessage}</p>}
+          </div>
+
+          {/* SETTINGS & ACCOUNT */}
+          <div className="sidebar-section mt-auto">
+            <h3 className="sidebar-section-title">Account</h3>
+            <nav className="sidebar-nav">
+              <NavItem icon={<IconAccount />} label="Account Settings" isActive={activeView === 'account'} onClick={nav('account')} />
+            </nav>
           </div>
 
           {/* SIDEBAR FOOTER */}
@@ -336,7 +327,53 @@ export function Layout({
             <div className="header-breadcrumbs">
               <span className="breadcrumb-parent">Workspaces</span>
               <span className="breadcrumb-separator">/</span>
-              <span className="breadcrumb-current">{activeWorkspaceName}</span>
+              <Dropdown
+                trigger={
+                  <button type="button" className="header-workspace-selector-btn">
+                    <span className={`workspace-avatar ${workspace.kind === 'private' ? 'private-ws' : 'team-ws'}`}>
+                      {workspace.kind === 'private' ? 'P' : activeWorkspaceName.charAt(0).toUpperCase()}
+                    </span>
+                    <span className="breadcrumb-current">{activeWorkspaceName}</span>
+                    <span className="selector-arrow">▾</span>
+                  </button>
+                }
+                align="left"
+              >
+                <div className="workspace-dropdown-menu">
+                  <div className="dropdown-header">Select Workspace</div>
+                  <button
+                    type="button"
+                    className={`dropdown-item ${workspace.kind === 'private' ? 'active' : ''}`}
+                    onClick={() => {
+                      setWorkspace({ kind: 'private' })
+                      onViewChange('tasks')
+                      window.location.hash = '#/tasks'
+                    }}
+                  >
+                    <span className="workspace-avatar private-ws">P</span>
+                    <span>Personal Space</span>
+                  </button>
+                  {uniqueTeams.map((t) => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`dropdown-item ${workspace.kind === 'team' && workspace.teamId === t.id ? 'active' : ''}`}
+                      onClick={() => setWorkspace({ kind: 'team', teamId: t.id })}
+                    >
+                      <span className="workspace-avatar team-ws">{t.name.charAt(0).toUpperCase()}</span>
+                      <span className="truncate">{t.name}</span>
+                    </button>
+                  ))}
+                  <div className="dropdown-divider"></div>
+                  <button
+                    type="button"
+                    className="dropdown-item text-accent font-bold"
+                    onClick={() => setIsCreateModalOpen(true)}
+                  >
+                    + Create Workspace Team
+                  </button>
+                </div>
+              </Dropdown>
             </div>
 
             {/* Search and Action items */}

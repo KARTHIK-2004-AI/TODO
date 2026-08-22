@@ -52,7 +52,9 @@ export function useTeams(
     if (!localStorage.getItem('authToken')) return
     try {
       const data = await fetchMyTeams()
-      setTeams(data.map((team) => ({ ...team, invites: team.invites ?? [] })))
+      const uniqueMap = new Map<string, Team>()
+      data.forEach((t) => uniqueMap.set(t.id, { ...t, invites: t.invites ?? [] }))
+      setTeams(Array.from(uniqueMap.values()))
     } catch (error) {
       setTeamError(error instanceof Error ? error.message : 'Unable to load teams')
     }
@@ -71,7 +73,10 @@ export function useTeams(
         teamForm.description.trim(),
         teamForm.purpose.trim()
       )
-      setTeams((current) => [createdTeam, ...current])
+      setTeams((current) => {
+        const filtered = current.filter((t) => t.id !== createdTeam.id)
+        return [createdTeam, ...filtered]
+      })
       setWorkspace({ kind: 'team', teamId: createdTeam.id })
       setTeamForm({ name: '', description: '', purpose: '' })
       setTeamNameEdit(trimmed)

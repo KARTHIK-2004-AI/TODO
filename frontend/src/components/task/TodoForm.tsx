@@ -6,9 +6,13 @@ interface TodoFormProps {
   title: string
   description: string
   assignedUserId?: string
+  dueDate?: string
+  priority?: string
   onChangeTitle: (val: string) => void
   onChangeDescription: (val: string) => void
   onChangeAssignedUserId?: (val: string) => void
+  onChangeDueDate?: (val: string) => void
+  onChangePriority?: (val: string) => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
   isLoading: boolean
   isShared: boolean
@@ -19,9 +23,13 @@ export function TodoForm({
   title,
   description,
   assignedUserId,
+  dueDate = '',
+  priority = 'MEDIUM',
   onChangeTitle,
   onChangeDescription,
   onChangeAssignedUserId,
+  onChangeDueDate,
+  onChangePriority,
   onSubmit,
   isLoading,
   isShared,
@@ -41,19 +49,52 @@ export function TodoForm({
         id="description"
         label="Description"
         multiline
-        rows={4}
+        rows={3}
         value={description}
         onChange={(event) => onChangeDescription(event.target.value)}
         placeholder="Add details for this task"
       />
+      
+      <div className="grid grid-cols-2 gap-3">
+        {onChangePriority && (
+          <div className="input-group">
+            <label htmlFor="priority" className="input-label text-xs font-bold text-secondary uppercase">Priority</label>
+            <select
+              id="priority"
+              value={priority}
+              onChange={(e) => onChangePriority(e.target.value)}
+              className="form-field w-full p-2.5 border border-divider rounded-xl bg-card text-foreground text-xs"
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+              <option value="URGENT">Urgent 🔴</option>
+            </select>
+          </div>
+        )}
+
+        {onChangeDueDate && (
+          <div className="input-group">
+            <label htmlFor="dueDate" className="input-label text-xs font-bold text-secondary uppercase">Due Date</label>
+            <input
+              id="dueDate"
+              type="date"
+              value={dueDate ? dueDate.split('T')[0] : ''}
+              onChange={(e) => onChangeDueDate(e.target.value)}
+              className="form-field w-full p-2.5 border border-divider rounded-xl bg-card text-foreground text-xs"
+            />
+          </div>
+        )}
+      </div>
+
       {isShared && members.length > 0 && onChangeAssignedUserId && (
         <div className="input-group">
-          <label htmlFor="assignedUserId" className="input-label">Assignee</label>
+          <label htmlFor="assignedUserId" className="input-label text-xs font-bold text-secondary uppercase">Assignee</label>
           <select
             id="assignedUserId"
             value={assignedUserId || ''}
             onChange={(event) => onChangeAssignedUserId(event.target.value)}
-            className="form-field w-full p-2.5 border border-divider rounded-xl bg-card text-foreground"
+            className="form-field w-full p-2.5 border border-divider rounded-xl bg-card text-foreground text-xs"
           >
             <option value="">Unassigned</option>
             {members.map((member) => (

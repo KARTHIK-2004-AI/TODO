@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createTodo, deleteTodo, fetchTodos, updateTodo } from '../api'
 import type { Todo, WorkspaceSelection } from '../types'
 
-const emptyForm = { title: '', description: '', assignedUserId: '' }
+const emptyForm = { title: '', description: '', assignedUserId: '', dueDate: '', priority: 'MEDIUM' }
 
 export function useTodos(workspace: WorkspaceSelection) {
   const [todos, setTodos] = useState<Todo[]>([])
@@ -32,7 +32,10 @@ export function useTodos(workspace: WorkspaceSelection) {
         statusFilter === 'all' ? undefined : statusFilter,
         assigneeFilter === 'all' ? undefined : assigneeFilter
       )
-      setTodos(data)
+      // Deduplicate by task ID
+      const map = new Map<string, Todo>()
+      data.forEach((item) => map.set(item.id, item))
+      setTodos(Array.from(map.values()))
       setStatusMessage('')
     } catch (error) {
       setStatusMessage(error instanceof Error ? error.message : 'Unable to load todos')
@@ -54,9 +57,14 @@ export function useTodos(workspace: WorkspaceSelection) {
         todoForm.title.trim(),
         todoForm.description.trim(),
         teamId,
-        todoForm.assignedUserId || null
+        todoForm.assignedUserId || null,
+        todoForm.dueDate || null,
+        todoForm.priority || 'MEDIUM'
       )
-      setTodos((current) => [created, ...current])
+      setTodos((current) => {
+        const filtered = current.filter((item) => item.id !== created.id)
+        return [created, ...filtered]
+      })
       setStatusMessage(
         teamId ? 'Shared todo created successfully' : 'Todo created successfully'
       )
@@ -157,7 +165,9 @@ export function useTodos(workspace: WorkspaceSelection) {
 
       if (eventType === 'TASK_CREATED') {
         setTodos((current) => {
-          if (current.some((item) => item.id === payload.id)) return current
+          if (current.some((item) => item.id === payload.id)) {
+            return current.map((item) => (item.id === payload.id ? { ...item, ...payload } : item))
+          }
           return [payload, ...current]
         })
       } else if (eventType === 'TASK_UPDATED') {

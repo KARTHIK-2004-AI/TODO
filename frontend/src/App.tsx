@@ -8,7 +8,6 @@ import { Login } from './pages/Login'
 import { Dashboard } from './pages/Dashboard'
 import { Account } from './pages/Account'
 import { AcceptInvite } from './pages/AcceptInvite'
-import { ActivityTimeline } from './pages/ActivityTimeline'
 import { TeamCalendar } from './components/workspace/TeamCalendar'
 import { TeamChat } from './components/chat/TeamChat'
 import { TeamMembers } from './components/workspace/TeamMembers'
@@ -16,11 +15,12 @@ import { TeamInvites } from './components/workspace/TeamInvites'
 import { SharedFiles } from './components/files/SharedFiles'
 import { TeamAnalytics } from './components/workspace/TeamAnalytics'
 import { TeamSettings } from './components/workspace/TeamSettings'
-import { NotificationCenter as NotificationPage } from './components/notifications/NotificationCenter'
 import { useAuth } from './hooks/useAuth'
-import { useTodos } from './hooks/useTodos'
 import { useTeams } from './hooks/useTeams'
+import { useTodos } from './hooks/useTodos'
 import { useWebSocket } from './hooks/useWebSocket'
+
+type AppActiveView = 'tasks' | 'account' | 'calendar' | 'chat' | 'members' | 'files' | 'reports' | 'settings'
 
 function getRoleLabel(role: TeamRole) {
   return role === 'OWNER' ? 'Owner' : role === 'ADMIN' ? 'Admin' : 'Member'
@@ -30,8 +30,8 @@ function canPerformAction(
   role: TeamRole | undefined,
   action: 'rename' | 'delete' | 'invite' | 'revoke' | 'remove-member' | 'remove-admin' | 'remove-owner' | 'view' | 'create'
 ) {
-  if (!role) return action === 'view' || action === 'create'
-  const roleMap: Record<TeamRole, number> = { OWNER: 3, ADMIN: 2, MEMBER: 1 }
+  if (!role) return false
+  const roleMap: Record<TeamRole, number> = { MEMBER: 1, ADMIN: 2, OWNER: 3 }
   const required: Record<string, number> = {
     rename: 3,
     delete: 3,
@@ -57,7 +57,7 @@ function applyTheme(theme: AccountSettings['theme']) {
 }
 
 function App() {
-  const [activeView, setActiveView] = useState<'tasks' | 'account' | 'activity' | 'calendar' | 'chat' | 'members' | 'files' | 'reports' | 'settings' | 'notifications'>('tasks')
+  const [activeView, setActiveView] = useState<AppActiveView>('tasks')
   const [route, setRoute] = useState<InviteRoute>({ kind: 'tasks' })
   const [workspace, setWorkspace] = useState<{ kind: 'private' } | { kind: 'team'; teamId: string }>({
     kind: 'private',
@@ -224,9 +224,9 @@ function App() {
         const token = params.get('token') ?? ''
         setRoute({ kind: 'reset-password', token: token || undefined })
         setActiveView('tasks')
-      } else if (path === '/activity') {
+      } else if (path === '/activity' || path === '/notifications') {
         setRoute({ kind: 'tasks' })
-        setActiveView('activity')
+        setActiveView('tasks')
       } else if (path === '/calendar') {
         setRoute({ kind: 'tasks' })
         setActiveView('calendar')
@@ -245,9 +245,6 @@ function App() {
       } else if (path === '/settings') {
         setRoute({ kind: 'tasks' })
         setActiveView('settings')
-      } else if (path === '/notifications') {
-        setRoute({ kind: 'tasks' })
-        setActiveView('notifications')
       } else {
         setRoute({ kind: path === '/account' ? 'account' : 'tasks' })
         setActiveView(path === '/account' ? 'account' : 'tasks')
@@ -458,8 +455,6 @@ function App() {
           setChangePasswordLoading={setChangePasswordLoading}
           applyTheme={applyTheme}
         />
-      ) : activeView === 'activity' ? (
-        <ActivityTimeline />
       ) : activeView === 'calendar' ? (
         <div className="page-view-wrapper">
           <TeamCalendar
@@ -470,7 +465,16 @@ function App() {
               // slight delay to let tasks page mount, then open drawer
               setTimeout(() => window.dispatchEvent(new CustomEvent('open:task', { detail: id })), 100)
             }}
-            onAddTaskOnDate={() => { window.location.hash = '#/tasks' }}
+            onAddTaskOnDate={(date) => {
+              if (date) {
+                const year = date.getFullYear()
+                const month = String(date.getMonth() + 1).padStart(2, '0')
+                const day = String(date.getDate()).padStart(2, '0')
+                setTodoForm((prev: any) => ({ ...prev, dueDate: `${year}-${month}-${day}` }))
+              }
+              window.location.hash = '#/tasks'
+              setTimeout(() => window.dispatchEvent(new CustomEvent('open:add-task')), 100)
+            }}
           />
         </div>
       ) : activeView === 'chat' && selectedTeam && user ? (
@@ -557,10 +561,6 @@ function App() {
               applyTheme={applyTheme}
             />
           )}
-        </div>
-      ) : activeView === 'notifications' ? (
-        <div className="page-view-wrapper">
-          <NotificationPage />
         </div>
       ) : (
         <Dashboard

@@ -29,12 +29,16 @@ export function useWebSocket(
       return
     }
 
+    if (socketRef.current && (socketRef.current.readyState === WebSocket.OPEN || socketRef.current.readyState === WebSocket.CONNECTING)) {
+      return
+    }
+
     const connect = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws'
       const host = window.location.host
       const socketUrl = `${protocol}://${host}/socket`
 
-      setStatus(socketRef.current ? 'reconnecting' : 'disconnected')
+      setStatus(isAuthenticatedRef.current ? 'reconnecting' : 'disconnected')
       const ws = new WebSocket(socketUrl)
       socketRef.current = ws
 
