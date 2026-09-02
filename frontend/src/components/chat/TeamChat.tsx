@@ -334,7 +334,7 @@ export function TeamChat({ teamId, currentUser, teamMembers, isEmbedded = false 
                 <div className="chat-bubble-text text-sm break-words whitespace-pre-wrap">
                   {renderMessageText(msg.message)}
                 </div>
-                <div className={`chat-bubble-time text-[10px] text-right mt-1 ${isMe ? 'text-indigo-200' : 'text-secondary'}`}>
+                <div className={`chat-bubble-time text-[10px] text-right mt-1 ${isMe ? 'opacity-70' : 'text-secondary'}`}>
                   {new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>

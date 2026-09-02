@@ -715,7 +715,7 @@ export function TaskDetailsDrawer({
                 type="button"
                 className={`archive-toggle-btn w-full py-2 px-3 rounded-lg text-xs font-semibold transition-all ${
                   todo.archived 
-                    ? 'bg-orange-100 hover:bg-orange-200 text-orange-700 border border-orange-200' 
+                    ? 'bg-surface border border-primary text-primary' 
                     : 'bg-surface hover:bg-hover text-foreground border border-divider'
                 }`}
                 onClick={() => handleFieldChange({ archived: !todo.archived })}
@@ -726,13 +726,13 @@ export function TaskDetailsDrawer({
 
             {/* Review Workflow Approve/Reject Panel */}
             {todo.status === 'IN_REVIEW' && (
-              <div className="review-workflow-panel bg-yellow-500/10 p-3 rounded-xl border border-yellow-500/20">
-                <h5 className="text-xs font-bold text-warning mb-1.5">Review Workflow</h5>
+              <div className="review-workflow-panel bg-surface p-3 rounded-xl border border-divider">
+                <h5 className="text-xs font-bold text-foreground mb-1.5">Review Workflow</h5>
                 {teamRole === 'OWNER' || teamRole === 'ADMIN' ? (
                   <div className="review-actions flex gap-2">
                     <button
                       type="button"
-                      className="approve-btn bg-success text-white py-1 px-2.5 rounded text-[11px] font-bold"
+                      className="approve-btn bg-foreground text-background py-1 px-2.5 rounded text-[11px] font-bold"
                       onClick={() => handleFieldChange({ status: 'DONE' })}
                     >
                       Approve

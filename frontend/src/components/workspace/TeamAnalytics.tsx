@@ -97,19 +97,19 @@ export function TeamAnalytics({ selectedTeam }: TeamAnalyticsProps) {
     <div className="workspace-analytics-tab animated-fade-in flex flex-col gap-6">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="metric-card bg-card border border-divider p-4 rounded-xl">
-          <span className="block text-2xl font-extrabold text-foreground">{todos.length}</span>
+          <span className="block text-2xl font-extrabold text-primary">{todos.length}</span>
           <span className="text-xs text-secondary font-medium">Total Active Tasks</span>
         </Card>
         <Card className="metric-card bg-card border border-divider p-4 rounded-xl">
-          <span className="block text-2xl font-extrabold text-green-500">{completedCount}</span>
+          <span className="block text-2xl font-extrabold text-primary">{completedCount}</span>
           <span className="text-xs text-secondary font-medium">Tasks Completed</span>
         </Card>
         <Card className="metric-card bg-card border border-divider p-4 rounded-xl">
-          <span className="block text-2xl font-extrabold text-warning">{inProgressCount}</span>
+          <span className="block text-2xl font-extrabold text-primary">{inProgressCount}</span>
           <span className="text-xs text-secondary font-medium">In Progress</span>
         </Card>
         <Card className="metric-card bg-card border border-divider p-4 rounded-xl">
-          <span className="block text-2xl font-extrabold text-danger">{overdueCount}</span>
+          <span className="block text-2xl font-extrabold text-primary">{overdueCount}</span>
           <span className="text-xs text-secondary font-medium">Overdue Tasks</span>
         </Card>
       </div>
@@ -160,19 +160,19 @@ export function TeamAnalytics({ selectedTeam }: TeamAnalyticsProps) {
 
           <div className="flex flex-col gap-3 min-w-[160px]">
             <div className="flex justify-between items-center text-xs">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-slate-400"></span> To Do</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-secondary"></span> To Do</span>
               <strong>{todoCount}</strong>
             </div>
             <div className="flex justify-between items-center text-xs">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-blue-500"></span> In Progress</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary opacity-80"></span> In Progress</span>
               <strong>{inProgressCount}</strong>
             </div>
             <div className="flex justify-between items-center text-xs">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-yellow-500"></span> In Review</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary opacity-60"></span> In Review</span>
               <strong>{inReviewCount}</strong>
             </div>
             <div className="flex justify-between items-center text-xs">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-green-500"></span> Done</span>
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-primary"></span> Done</span>
               <strong>{completedCount}</strong>
             </div>
           </div>

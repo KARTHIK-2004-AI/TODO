@@ -128,10 +128,11 @@ export function Layout({
   setTeamForm = () => {},
   onCreateTeam = () => {},
   teamError = '',
-  teamMessage = '',
+  teamMessage: _teamMessage = '',
 }: LayoutProps) {
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     const handleOpenCreateModal = () => setIsCreateModalOpen(true)
@@ -160,13 +161,22 @@ export function Layout({
   const nav = (view: ActiveView) => () => {
     onViewChange(view)
     window.location.hash = `#/${view}`
+    setIsMobileMenuOpen(false)
   }
 
   return (
     <div className="app-layout">
+      {/* MOBILE OVERLAY */}
+      {isMobileMenuOpen && (
+        <div
+          className="mobile-backdrop fixed inset-0 bg-black/60 z-40 md:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* 1. LEFT SIDEBAR */}
       {user && (
-        <aside className="sidebar">
+        <aside className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
           {/* Sidebar Top Logo */}
           <div className="sidebar-brand">
             <span className="brand-logo">C</span>
@@ -189,6 +199,7 @@ export function Layout({
                   setWorkspace({ kind: 'private' })
                   onViewChange('tasks')
                   window.location.hash = '#/tasks'
+                  setIsMobileMenuOpen(false)
                 }}
               />
               <NavItem icon={<IconCalendar />} label="Calendar" isActive={activeView === 'calendar'} onClick={nav('calendar')} />
@@ -208,69 +219,6 @@ export function Layout({
               </nav>
             </div>
           )}
-
-          {/* WORKSPACES LIST */}
-          <div className="sidebar-section workspaces-section">
-            <div className="section-header flex justify-between items-center pr-1 mb-2">
-              <h3 className="sidebar-section-title mb-0">Workspaces</h3>
-              <button
-                type="button"
-                className="create-ws-btn text-[11px] font-bold text-accent hover:text-accent-hover bg-accent-light/50 px-2 py-0.5 rounded-md"
-                onClick={() => setIsCreateModalOpen(true)}
-                title="Create Workspace Team"
-              >
-                + New Team
-              </button>
-            </div>
-
-            <div className="workspaces-list">
-              <button
-                type="button"
-                className={`workspace-item-btn ${workspace.kind === 'private' ? 'active' : ''}`}
-                onClick={() => setWorkspace({ kind: 'private' })}
-              >
-                <span className="workspace-avatar private-ws">P</span>
-                <span className="workspace-name">Personal Space</span>
-              </button>
-
-              {uniqueTeams.map((team) => {
-                const isActive = workspace.kind === 'team' && workspace.teamId === team.id
-                const chatCount = chatUnreadCounts[team.id] || 0
-                return (
-                  <button
-                    key={team.id}
-                    type="button"
-                    className={`workspace-item-btn ${isActive ? 'active' : ''}`}
-                    onClick={() => setWorkspace({ kind: 'team', teamId: team.id })}
-                  >
-                    <span className="workspace-avatar team-ws">
-                      {team.name.charAt(0).toUpperCase()}
-                    </span>
-                    <span className="workspace-name truncate">{team.name}</span>
-                    {chatCount > 0 && (
-                      <span className="sidebar-badge">{chatCount}</span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Quick Create Workspace Form */}
-            <form className="quick-create-team-form" onSubmit={handleCreateTeamSubmit}>
-              <input
-                type="text"
-                placeholder="New Workspace..."
-                value={teamForm.name}
-                onChange={(e) => setTeamForm({ ...teamForm, name: e.target.value })}
-                className="quick-team-input"
-              />
-              <button type="submit" className="quick-team-btn" title="Create Workspace">
-                +
-              </button>
-            </form>
-            {teamError && <p className="sidebar-error-text">{teamError}</p>}
-            {teamMessage && <p className="sidebar-success-text">{teamMessage}</p>}
-          </div>
 
           {/* SETTINGS & ACCOUNT */}
           <div className="sidebar-section mt-auto">
@@ -301,7 +249,7 @@ export function Layout({
                   Profile Settings
                 </button>
                 <div className="dropdown-divider"></div>
-                <button type="button" className="dropdown-item text-danger" onClick={onLogout}>
+                <button type="button" className="dropdown-item text-primary" onClick={onLogout}>
                   Log Out
                 </button>
               </div>
@@ -323,6 +271,20 @@ export function Layout({
         {/* TOP NAVIGATION HEADER */}
         {user && (
           <header className="top-header">
+            {/* Mobile Hamburger Toggle */}
+            <button
+              type="button"
+              className="mobile-menu-btn md:hidden p-2 rounded-lg bg-surface border border-divider text-primary mr-2"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              title="Toggle Sidebar Menu"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            </button>
+
             {/* Breadcrumbs / Workspace indicator */}
             <div className="header-breadcrumbs">
               <span className="breadcrumb-parent">Workspaces</span>
@@ -367,7 +329,7 @@ export function Layout({
                   <div className="dropdown-divider"></div>
                   <button
                     type="button"
-                    className="dropdown-item text-accent font-bold"
+                    className="dropdown-item text-primary font-bold"
                     onClick={() => setIsCreateModalOpen(true)}
                   >
                     + Create Workspace Team
@@ -377,10 +339,10 @@ export function Layout({
             </div>
 
             {/* Search and Action items */}
-            <div className="header-actions">
+            <div className="header-actions flex items-center gap-3">
               {/* Search tasks box */}
               {activeView === 'tasks' && (
-                <div className="header-search-bar">
+                <div className="header-search-bar hidden sm:flex">
                   <span className="search-icon">🔍</span>
                   <input
                     type="text"
@@ -391,6 +353,25 @@ export function Layout({
                   <kbd className="search-shortcut">Ctrl K</kbd>
                 </div>
               )}
+
+              {/* Theme Mode Toggle Icon */}
+              <button
+                type="button"
+                className="theme-toggle-icon-btn p-2.5 rounded-full bg-surface border border-divider text-primary hover:bg-hover transition-colors"
+                title="Toggle Theme Mode"
+                onClick={() => {
+                  const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+                  if (isDark) {
+                    document.documentElement.removeAttribute('data-theme')
+                  } else {
+                    document.documentElement.setAttribute('data-theme', 'dark')
+                  }
+                }}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              </button>
 
               {/* Notification Center */}
               <NotificationCenter />

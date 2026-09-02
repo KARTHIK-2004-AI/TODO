@@ -190,27 +190,27 @@ export function Dashboard({
     const chatCount = chatUnreadCounts[workspace.teamId] || 0
     
     const options = [
-      { id: 'overview', label: 'Overview', icon: '🏠' },
-      { id: 'tasks', label: 'Tasks', icon: '📋' },
-      { id: 'chat', label: 'Discussion', icon: '💬', badge: chatCount > 0 ? chatCount : undefined },
-      { id: 'members', label: 'Members', icon: '👥' },
+      { id: 'overview', label: 'Overview' },
+      { id: 'tasks', label: 'Tasks' },
+      { id: 'chat', label: 'Discussion', badge: chatCount > 0 ? chatCount : undefined },
+      { id: 'members', label: 'Members' },
     ]
 
     // Only show invites tab to owners/admins
     if (canPerformAction(currentRole, 'invite')) {
-      options.push({ id: 'invites', label: 'Invites', icon: '✉️' })
+      options.push({ id: 'invites', label: 'Invites' })
     }
 
     options.push(
-      { id: 'files', label: 'Files', icon: '📁' },
-      { id: 'timeline', label: 'Timeline', icon: '⏳' },
-      { id: 'calendar', label: 'Calendar', icon: '📅' },
-      { id: 'analytics', label: 'Analytics', icon: '📊' }
+      { id: 'files', label: 'Files' },
+      { id: 'timeline', label: 'Timeline' },
+      { id: 'calendar', label: 'Calendar' },
+      { id: 'analytics', label: 'Analytics' }
     )
 
     // Only show settings tab if the user has rename/delete permissions
     if (canPerformAction(currentRole, 'rename') || canPerformAction(currentRole, 'delete')) {
-      options.push({ id: 'settings', label: 'Settings', icon: '⚙️' })
+      options.push({ id: 'settings', label: 'Settings' })
     }
 
     return options
@@ -230,7 +230,7 @@ export function Dashboard({
       <section className="dashboard-banner flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-card border border-divider p-6 rounded-2xl">
         <div>
           <h1 className="text-2xl font-extrabold text-foreground">
-            {friendlyGreeting}, {user.name} 👋
+            {friendlyGreeting}, {user.name}
           </h1>
           <p className="text-sm text-secondary mt-1">
             {workspace.kind === 'private'
@@ -241,10 +241,10 @@ export function Dashboard({
 
         <div className="flex items-center gap-3">
           <span className="text-xs font-semibold text-secondary bg-surface border border-divider px-3 py-1.5 rounded-full">
-            📅 {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
+            {new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' })}
           </span>
           <button type="button" className="btn-secondary flex items-center gap-1.5 text-xs py-2 px-4 rounded-xl" onClick={() => window.dispatchEvent(new CustomEvent('open:create-team'))}>
-            <span>👥</span> + Workspace
+            + Workspace
           </button>
           <button type="button" className="btn-primary flex items-center gap-1.5 text-xs py-2 px-4 rounded-xl" onClick={() => setIsAddTaskOpen(true)}>
             <span className="text-sm">+</span> New Task
@@ -255,6 +255,57 @@ export function Dashboard({
       {/* 2. TABS BAR FOR TEAM WORKSPACES */}
       {workspace.kind === 'team' && (
         <Tabs options={tabOptions} activeId={activeSubTab} onChange={setActiveSubTab} />
+      )}
+
+      {/* SECTION TITLE & ACTION HEADER */}
+      {workspace.kind === 'team' && activeSubTab !== 'overview' && (
+        <div className="section-page-header flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4 pb-2 border-b border-divider/40">
+          <div>
+            <h2 className="text-xl font-bold text-foreground tracking-tight">
+              {activeSubTab === 'chat' && 'Discussions'}
+              {activeSubTab === 'tasks' && 'Tasks'}
+              {activeSubTab === 'members' && 'Members'}
+              {activeSubTab === 'invites' && 'Invites'}
+              {activeSubTab === 'files' && 'Files'}
+              {activeSubTab === 'timeline' && 'Timeline'}
+              {activeSubTab === 'calendar' && 'Calendar'}
+              {activeSubTab === 'analytics' && 'Analytics'}
+              {activeSubTab === 'settings' && 'Settings'}
+            </h2>
+            <p className="text-xs text-secondary mt-0.5">
+              {activeSubTab === 'chat' && 'Collaborate and communicate with your team'}
+              {activeSubTab === 'tasks' && 'Manage, filter, and track project tasks'}
+              {activeSubTab === 'members' && 'Manage workspace members and permissions'}
+              {activeSubTab === 'invites' && 'Manage workspace invitations'}
+              {activeSubTab === 'files' && 'Shared documents and task attachments'}
+              {activeSubTab === 'timeline' && 'Activity log and workspace updates'}
+              {activeSubTab === 'calendar' && 'Schedule and view upcoming deadlines'}
+              {activeSubTab === 'analytics' && 'Workspace insights and performance overview'}
+              {activeSubTab === 'settings' && 'Manage workspace settings and preferences'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {activeSubTab === 'members' && (
+              <button type="button" className="btn-primary text-xs py-2 px-4 rounded-xl" onClick={() => setActiveSubTab('invites')}>
+                + Add Members
+              </button>
+            )}
+            {activeSubTab === 'invites' && (
+              <button type="button" className="btn-primary text-xs py-2 px-4 rounded-xl" onClick={() => {
+                const el = document.getElementById('invite-email-input')
+                if (el) el.focus()
+              }}>
+                + Invite People
+              </button>
+            )}
+            {activeSubTab === 'tasks' && (
+              <button type="button" className="btn-primary text-xs py-2 px-4 rounded-xl" onClick={() => setIsAddTaskOpen(true)}>
+                + New Task
+              </button>
+            )}
+          </div>
+        </div>
       )}
 
       {/* 3. CORE SUB-VIEW ROUTER PANEL */}

@@ -181,29 +181,30 @@
   opacity: 0.6;
 }
 
-/* Priority Styling (adapted nicely for dark and light modes) */
+/* Priority Styling (Monochromatic Bklit System) */
 .priority-urgent {
-  background-color: var(--danger-light);
-  color: var(--danger);
-  border-left: 2px solid var(--danger);
+  background-color: var(--accent);
+  color: var(--accent-text);
+  border-left: 2px solid var(--accent-text);
+  box-shadow: var(--backlit-glow);
 }
 
 .priority-high {
-  background-color: var(--warning-light);
-  color: var(--warning);
-  border-left: 2px solid var(--warning);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-left: 2px solid var(--border-focus);
 }
 
 .priority-medium {
-  background-color: var(--accent-light);
-  color: var(--accent);
-  border-left: 2px solid var(--accent);
+  background-color: var(--bg-surface);
+  color: var(--text-primary);
+  border-left: 2px solid var(--border);
 }
 
 .priority-low {
   background-color: var(--bg-surface);
   color: var(--text-secondary);
-  border-left: 2px solid var(--text-muted);
+  border-left: 2px solid var(--border);
 }
 
 /* Quick Add plan hover button */

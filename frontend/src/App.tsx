@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/set-state-in-effect, react-hooks/preserve-manual-memoization */
 import { useCallback, useEffect, useState } from 'react'
 import './App.css'
-import { getProfile, fetchAccountSettings } from './api'
+import { getProfile, fetchAccountSettings, fetchChatUnreadCounts, fetchTeamDetails } from './api'
 import type { AccountSettings, InviteRoute, ProfileData, TeamRole } from './types'
 import { Layout } from './components/layouts/Layout'
 import { Login } from './pages/Login'
@@ -260,7 +260,6 @@ function App() {
   const loadUnreadCounts = useCallback(async () => {
     if (!localStorage.getItem('authToken')) return
     try {
-      const { fetchChatUnreadCounts } = await import('./api')
       const counts = await fetchChatUnreadCounts()
       const mapping: Record<string, number> = {}
       counts.forEach((c) => {
@@ -322,8 +321,7 @@ function App() {
   // Reload team settings when workspace active team changes or WebSocket update notifies changes
   const reloadActiveTeamDetails = useCallback(() => {
     if (workspace.kind === 'team') {
-      import('./api')
-        .then(({ fetchTeamDetails }) => fetchTeamDetails(workspace.teamId))
+      fetchTeamDetails(workspace.teamId)
         .then((fullTeam) => {
           setTeams((current) =>
             current.map((t) =>

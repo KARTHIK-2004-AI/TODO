@@ -117,55 +117,75 @@ export function WorkspaceOverview({
       {/* 1. METRICS GRID ROW */}
       <div className="overview-metrics-grid">
         <Card className="metric-card">
-          <div className="metric-icon-wrapper purple-bg">📋</div>
+          <div className="metric-icon-wrapper bklit-metric-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" />
+            </svg>
+          </div>
           <div className="metric-content">
             <span className="metric-label">My Tasks</span>
             <div className="metric-value-row">
-              <span className="metric-value">{pendingCount}</span>
+              <span className="metric-value bklit-mono">{pendingCount}</span>
             </div>
             <span className="metric-description">Pending tasks</span>
           </div>
         </Card>
 
         <Card className="metric-card">
-          <div className="metric-icon-wrapper blue-bg">⏳</div>
+          <div className="metric-icon-wrapper bklit-metric-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
           <div className="metric-content">
             <span className="metric-label">In Progress</span>
             <div className="metric-value-row">
-              <span className="metric-value">{inProgressCount}</span>
+              <span className="metric-value bklit-mono">{inProgressCount}</span>
             </div>
             <span className="metric-description">Tasks in progress</span>
           </div>
         </Card>
 
         <Card className="metric-card">
-          <div className="metric-icon-wrapper green-bg">✅</div>
+          <div className="metric-icon-wrapper bklit-metric-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+          </div>
           <div className="metric-content">
             <span className="metric-label">Completed</span>
             <div className="metric-value-row">
-              <span className="metric-value">{completedCount}</span>
+              <span className="metric-value bklit-mono">{completedCount}</span>
             </div>
             <span className="metric-description">Tasks completed</span>
           </div>
         </Card>
 
         <Card className="metric-card">
-          <div className="metric-icon-wrapper red-bg">⚠️</div>
+          <div className="metric-icon-wrapper bklit-metric-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+          </div>
           <div className="metric-content">
             <span className="metric-label">Overdue</span>
             <div className="metric-value-row">
-              <span className="metric-value">{overdueCount}</span>
+              <span className="metric-value bklit-mono">{overdueCount}</span>
             </div>
             <span className="metric-description">Tasks overdue</span>
           </div>
         </Card>
 
-        <Card className="metric-card font-semibold">
-          <div className="metric-icon-wrapper dark-bg">⚡</div>
+        <Card className="metric-card">
+          <div className="metric-icon-wrapper bklit-metric-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            </svg>
+          </div>
           <div className="metric-content">
             <span className="metric-label">Focus Time</span>
             <div className="metric-value-row">
-              <span className="metric-value">2.4h</span>
+              <span className="metric-value bklit-mono">2.4h</span>
             </div>
             <span className="metric-description">Focus sessions logged</span>
           </div>
@@ -187,7 +207,7 @@ export function WorkspaceOverview({
           >
             <div className="today-tasks-list">
               {todayTasks.length === 0 ? (
-                <div className="empty-overview-item">🎉 No urgent tasks for today!</div>
+                <div className="empty-overview-item">No urgent tasks for today.</div>
               ) : (
                 todayTasks.map((todo) => (
                   <div key={todo.id} className="today-task-row">
@@ -244,7 +264,11 @@ export function WorkspaceOverview({
               ) : (
                 upcomingDeadlines.map((todo) => (
                   <div key={todo.id} className="deadline-row" onClick={() => onSelectTodo(todo.id)}>
-                    <div className="deadline-icon">📅</div>
+                    <div className="deadline-icon">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="3" y1="10" x2="21" y2="10" />
+                      </svg>
+                    </div>
                     <div className="deadline-details truncate">
                       <span className="deadline-title truncate">{todo.title}</span>
                       <span className="deadline-project truncate">
@@ -261,7 +285,7 @@ export function WorkspaceOverview({
           </Card>
         </div>
 
-        {/* Column 3: Recent Activity & Quick Actions */}
+        {/* Column 3: Recent Activity */}
         <div className="overview-column flex flex-col gap-5">
           <Card
             title="Recent Activity"
@@ -290,43 +314,6 @@ export function WorkspaceOverview({
               )}
             </div>
           </Card>
-
-            <Card title="Quick Actions" className="overview-panel-card quick-actions-card-wrapper" style={{ padding: '20px 24px' }}>
-              <div className="quick-actions-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
-                <button type="button" className="quick-action-btn" onClick={onAddTaskClick} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(139, 92, 246, 0.1)', color: '#8b5cf6' }}>📝</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Create Task</span>
-                </button>
-                <button type="button" className="quick-action-btn" onClick={() => { window.location.hash = '#/files' }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6' }}>📁</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Upload File</span>
-                </button>
-                <button type="button" className="quick-action-btn" onClick={() => { window.location.hash = '#/members' }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981' }}>👥</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Invite Member</span>
-                </button>
-                <button type="button" className="quick-action-btn" onClick={() => { window.location.hash = '#/chat' }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(249, 115, 22, 0.1)', color: '#f97316' }}>💬</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Start Chat</span>
-                </button>
-                <button type="button" className="quick-action-btn" onClick={() => { window.location.hash = '#/tasks' }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444' }}>💼</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>View All Tasks</span>
-                </button>
-                <button type="button" className="quick-action-btn" onClick={() => { window.location.hash = '#/calendar' }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.1)', color: '#06b6d4' }}>📅</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>View Calendar</span>
-                </button>
-                <button type="button" className="quick-action-btn" onClick={() => { window.location.hash = '#/settings' }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(107, 114, 128, 0.1)', color: '#6b7280' }}>⚙️</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Workspace Settings</span>
-                </button>
-                <button type="button" className="quick-action-btn" onClick={() => { window.location.hash = '#/reports' }} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', padding: '16px', background: 'var(--surface)', border: '1px solid var(--divider)', borderRadius: '12px', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '1.5rem', padding: '10px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.1)', color: '#f59e0b' }}>📊</span>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>View Reports</span>
-                </button>
-              </div>
-            </Card>
         </div>
       </div>
     </div>
